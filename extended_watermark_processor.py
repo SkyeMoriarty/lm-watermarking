@@ -31,12 +31,12 @@ from alternative_prf_schemes import prf_lookup, seeding_scheme_lookup
 
 class WatermarkBase:
     def __init__(
-        self,
-        vocab: list[int] = None,
-        gamma: float = 0.25,
-        delta: float = 2.0,
-        seeding_scheme: str = "selfhash",  # simple default, find more schemes in alternative_prf_schemes.py
-        select_green_tokens: bool = True,  # should always be the default if not running in legacy mode
+            self,
+            vocab: list[int] = None,
+            gamma: float = 0.25,
+            delta: float = 2.0,
+            seeding_scheme: str = "selfhash",  # simple default, find more schemes in alternative_prf_schemes.py
+            select_green_tokens: bool = True,  # should always be the default if not running in legacy mode
     ):
         # patch now that None could now maybe be passed as seeding_scheme
         if seeding_scheme is None:
@@ -54,6 +54,13 @@ class WatermarkBase:
         # Legacy behavior:
         self.select_green_tokens = select_green_tokens
 
+    # 设置四个内部关键属性：
+    # 1. 伪随机函数prf：决定如何生成哈希值
+    # 2. 上下文宽度，表示依赖的前缀token的数量
+    # 3. 盐值，用于增强哈希的唯一性（是一个随机生成的额外数据，以防止攻击），这里是一个布尔值，如果true，hash key就是盐值
+    # 4. 哈希密钥，用于初始化伪随机数生成器（PRNG）——全局唯一，长期有效
+    # 区别于1.prf_key：临时生成的随机密钥，由hash key+上下文通过哈希函数计算得出
+    # 2. rng：伪随机数生成器，通过prf_key初始化，用于决定green_list的划分
     def _initialize_seeding_scheme(self, seeding_scheme: str) -> None:
         """Initialize all internal settings of the seeding strategy from a colloquial, "public" name for the scheme."""
         self.prf_type, self.context_width, self.self_salt, self.hash_key = seeding_scheme_lookup(seeding_scheme)
@@ -64,20 +71,23 @@ class WatermarkBase:
         if input_ids.shape[-1] < self.context_width:
             raise ValueError(f"seeding_scheme requires at least a {self.context_width} token prefix to seed the RNG.")
 
-        prf_key = prf_lookup[self.prf_type](input_ids[-self.context_width :], salt_key=self.hash_key)
+        # 根据seeding_scheme设置好对应的prf名称，在这里通过prf_lookup字典根据名称键取对应的prf函数
+        # 输入input(指定窗口大小)和hash key，得到一个可复现的哈希值
+        prf_key = prf_lookup[self.prf_type](input_ids[-self.context_width:], salt_key=self.hash_key)
         # enable for long, interesting streams of pseudorandom numbers: print(prf_key)
-        self.rng.manual_seed(prf_key % (2**64 - 1))  # safeguard against overflow from long
+        self.rng.manual_seed(prf_key % (2 ** 64 - 1))  # safeguard against overflow from long 防止溢出
 
     def _get_greenlist_ids(self, input_ids: torch.LongTensor) -> torch.LongTensor:
         """Seed rng based on local context width and use this information to generate ids on the green list."""
-        self._seed_rng(input_ids)
+        self._seed_rng(input_ids)  # 调用方法设定随机种子成员变量
 
         greenlist_size = int(self.vocab_size * self.gamma)
+        # torch.randperm用于打乱原张量顺序，随机排列
         vocab_permutation = torch.randperm(self.vocab_size, device=input_ids.device, generator=self.rng)
         if self.select_green_tokens:  # directly
             greenlist_ids = vocab_permutation[:greenlist_size]  # new
         else:  # select green via red
-            greenlist_ids = vocab_permutation[(self.vocab_size - greenlist_size) :]  # legacy behavior
+            greenlist_ids = vocab_permutation[(self.vocab_size - greenlist_size):]  # legacy behavior
         return greenlist_ids
 
 
@@ -95,35 +105,41 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
             self._init_spike_entropies()
 
     def _init_spike_entropies(self):
-        alpha = torch.exp(torch.tensor(self.delta)).item()
+        alpha = torch.exp(torch.tensor(self.delta)).item()  # 将logit偏置delta转换为【概率空间的乘数】=>改变原来的token概率分布
         gamma = self.gamma
 
-        self.z_value = ((1 - gamma) * (alpha - 1)) / (1 - gamma + (alpha * gamma))
-        self.expected_gl_coef = (gamma * alpha) / (1 - gamma + (alpha * gamma))
+        # 分子表示非绿色token概率被压缩的程度
+        self.z_value = ((1 - gamma) * (alpha - 1)) / (1 - gamma + (alpha * gamma))  # 熵的模数-决定熵的敏感度，用于量化【水印对token分布的扰动强度】=>作用于全局，后面用此计算文本熵
+        self.expected_gl_coef = (gamma * alpha) / (1 - gamma + (alpha * gamma))  # 水印文本中绿色列表token的期望数量（无水印文本中绿色token的比例是gamma）
 
         # catch for overflow when bias is "infinite"
         if alpha == torch.inf:
             self.z_value = 1.0
             self.expected_gl_coef = 1.0
 
+    # 以Python标量形式存储多个批次的尖峰熵张量
+    # 理解张量和Python标量，为什么要互相转化？
+    # 张量是Pytorch特有的结构，而外部系统只支持原生的Python类型；张量会保留梯度信息和设备位置（如GPU）
     def _get_spike_entropies(self):
-        spike_ents = [[] for _ in range(len(self.spike_entropies))]
-        for b_idx, ent_tensor_list in enumerate(self.spike_entropies):
-            for ent_tensor in ent_tensor_list:
+        spike_ents = [[] for _ in range(len(self.spike_entropies))]  # 初始化一个二维数组
+        for b_idx, ent_tensor_list in enumerate(self.spike_entropies):  # 按批次遍历
+            for ent_tensor in ent_tensor_list:  # 遍历张量list
                 spike_ents[b_idx].append(ent_tensor.item())
         return spike_ents
 
+    # 获取当前存储的所有尖峰熵值，并清空存储
     def _get_and_clear_stored_spike_ents(self):
         spike_ents = self._get_spike_entropies()
         self.spike_entropies = None
         return spike_ents
 
+    # 公式：S(p,z) = \sum{p/(1+zpk)}
     def _compute_spike_entropy(self, scores):
         # precomputed z value in init
-        probs = scores.softmax(dim=-1)
-        denoms = 1 + (self.z_value * probs)
-        renormed_probs = probs / denoms
-        sum_renormed_probs = renormed_probs.sum()
+        probs = scores.softmax(dim=-1)  # 将logits转换为probs：[batch_size, vocab_size]
+        denoms = 1 + (self.z_value * probs)  # 分母
+        renormed_probs = probs / denoms  # 归一化概率
+        sum_renormed_probs = renormed_probs.sum()  # 求和得到尖峰熵值
         return sum_renormed_probs
 
     def _calc_greenlist_mask(self, scores: torch.FloatTensor, greenlist_token_ids) -> torch.BoolTensor:
@@ -134,26 +150,32 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
                 green_tokens_mask[b_idx][greenlist] = True
         return green_tokens_mask
 
-    def _bias_greenlist_logits(self, scores: torch.Tensor, greenlist_mask: torch.Tensor, greenlist_bias: float) -> torch.Tensor:
+    def _bias_greenlist_logits(self, scores: torch.Tensor, greenlist_mask: torch.Tensor,
+                               greenlist_bias: float) -> torch.Tensor:
         scores[greenlist_mask] = scores[greenlist_mask] + greenlist_bias
         return scores
 
-    def _score_rejection_sampling(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, tail_rule="fixed_compute") -> list[int]:
+    # 对应selfhash规则，按照score rank逐个筛选candidate token：check validity ⇒ final green list
+    def _score_rejection_sampling(self, input_ids: torch.LongTensor, scores: torch.FloatTensor,
+                                  tail_rule="fixed_compute") -> list[int]:
         """Generate greenlist based on current candidate next token. Reject and move on if necessary. Method not batched.
         This is only a partial version of Alg.3 "Robust Private Watermarking", as it always assumes greedy sampling. It will still (kinda)
         work for all types of sampling, but less effectively.
         To work efficiently, this function can switch between a number of rules for handling the distribution tail.
         These are not exposed by default.
         """
+        # 得分和token id
         sorted_scores, greedy_predictions = scores.sort(dim=-1, descending=True)
 
         final_greenlist = []
         for idx, prediction_candidate in enumerate(greedy_predictions):
-            greenlist_ids = self._get_greenlist_ids(torch.cat([input_ids, prediction_candidate[None]], dim=0))  # add candidate to prefix
+            greenlist_ids = self._get_greenlist_ids(
+                torch.cat([input_ids, prediction_candidate[None]], dim=0))  # add candidate to prefix
             if prediction_candidate in greenlist_ids:  # test for consistency
                 final_greenlist.append(prediction_candidate)
 
             # What follows below are optional early-stopping rules for efficiency
+            # 不会暴力遍历 vocab 中所有 token → 固定尝试若干个高概率候选即可
             if tail_rule == "fixed_score":
                 if sorted_scores[0] - sorted_scores[idx + 1] > self.delta:
                     break
@@ -164,7 +186,7 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
                 if idx == 40:
                     break
             else:
-                pass  # do not break early
+                pass  # do not break early-依旧暴力遍历
         return torch.as_tensor(final_greenlist, device=input_ids.device)
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
@@ -179,13 +201,14 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
 
         list_of_greenlist_ids = [None for _ in input_ids]  # Greenlists could differ in length
         for b_idx, input_seq in enumerate(input_ids):
-            if self.self_salt:
+            if self.self_salt:  # 只有seeding_scheme == "algorithm-3" or "selfhash"的盐值是True
                 greenlist_ids = self._score_rejection_sampling(input_seq, scores[b_idx])
             else:
                 greenlist_ids = self._get_greenlist_ids(input_seq)
             list_of_greenlist_ids[b_idx] = greenlist_ids
 
             # logic for computing and storing spike entropies for analysis
+            # 尖峰熵在这里只是计算、存储，以作分析，没有对其进行什么筛选判断
             if self.store_spike_ents:
                 if self.spike_entropies is None:
                     self.spike_entropies = [[] for _ in range(input_ids.shape[0])]
@@ -200,6 +223,7 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
 class WatermarkDetector(WatermarkBase):
     """This is the detector for all watermarks imprinted with WatermarkLogitsProcessor.
 
+    关键是复现green list的生成过程-需要和生成过程相同的device & [tokenizer] & seeding_scheme & delta & gamma
     The detector needs to be given the exact same settings that were given during text generation  to replicate the watermark
     greenlist generation and so detect the watermark.
     This includes the correct device that was used during text generation, the correct tokenizer, the correct
@@ -212,14 +236,14 @@ class WatermarkDetector(WatermarkBase):
     """
 
     def __init__(
-        self,
-        *args,
-        device: torch.device = None,
-        tokenizer: Tokenizer = None,
-        z_threshold: float = 4.0,
-        normalizers: list[str] = ["unicode"],  # or also: ["unicode", "homoglyphs", "truecase"]
-        ignore_repeated_ngrams: bool = True,
-        **kwargs,
+            self,
+            *args,
+            device: torch.device = None,
+            tokenizer: Tokenizer = None,
+            z_threshold: float = 4.0,
+            normalizers: list[str] = ["unicode"],  # or also: ["unicode", "homoglyphs", "truecase"]
+            ignore_repeated_ngrams: bool = True,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         # also configure the metrics returned/preprocessing options
@@ -236,19 +260,20 @@ class WatermarkDetector(WatermarkBase):
             self.normalizers.append(normalization_strategy_lookup(normalization_strategy))
         self.ignore_repeated_ngrams = ignore_repeated_ngrams
 
+    # 根据返回要求创建好一个空字典
     def dummy_detect(
-        self,
-        return_prediction: bool = True,
-        return_scores: bool = True,
-        z_threshold: float = None,
-        return_num_tokens_scored: bool = True,
-        return_num_green_tokens: bool = True,
-        return_green_fraction: bool = True,
-        return_green_token_mask: bool = False,
-        return_all_window_scores: bool = False,
-        return_z_score: bool = True,
-        return_z_at_T: bool = True,
-        return_p_value: bool = True,
+            self,
+            return_prediction: bool = True,
+            return_scores: bool = True,
+            z_threshold: float = None,
+            return_num_tokens_scored: bool = True,
+            return_num_green_tokens: bool = True,
+            return_green_fraction: bool = True,
+            return_green_token_mask: bool = False,
+            return_all_window_scores: bool = False,
+            return_z_score: bool = True,
+            return_z_at_T: bool = True,
+            return_p_value: bool = True,
     ):
         # HF-style output dictionary
         score_dict = dict()
@@ -295,13 +320,15 @@ class WatermarkDetector(WatermarkBase):
         p_value = scipy.stats.norm.sf(z)
         return p_value
 
-    @lru_cache(maxsize=2**32)
+    # 根据输入prefix得到green list，返回target是否在list中的bool值
+    @lru_cache(maxsize=2 ** 32)
     def _get_ngram_score_cached(self, prefix: tuple[int], target: int):
         """Expensive re-seeding and sampling is cached."""
         # Handle with care, should ideally reset on __getattribute__ access to self.prf_type, self.context_width, self.self_salt, self.hash_key
         greenlist_ids = self._get_greenlist_ids(torch.as_tensor(prefix, device=self.device))
         return True if target in greenlist_ids else False
 
+    # 从input中获取所有的ngram，并计算每个ngram是否为水印，返回一个字典和ngram出现频率列表
     def _score_ngrams_in_passage(self, input_ids: torch.Tensor):
         """Core function to gather all ngrams in the input and compute their watermark."""
         if len(input_ids) - self.context_width < 1:
@@ -311,27 +338,36 @@ class WatermarkDetector(WatermarkBase):
             )
 
         # Compute scores for all ngrams contexts in the passage:
+        # self.self_salt是0 true/1 false，输入seq和context_width得到所有ngram
+        # self.self_salt=0就表示candidate token参与自哈希，ngram的宽度+1
         token_ngram_generator = ngrams(input_ids.cpu().tolist(), self.context_width + 1 - self.self_salt)
+        # 计算每个ngram出现的频率-用于后续累加计算
         frequencies_table = collections.Counter(token_ngram_generator)
+        # 键为ngram，值为bool的字典
         ngram_to_watermark_lookup = {}
+        # 遍历ngram集合，如果盐值为true则prefix就是当前ngram，即包括最后一个generated token
+        # 否则是除了最后一个的所有，即所有前缀token
         for idx, ngram_example in enumerate(frequencies_table.keys()):
             prefix = ngram_example if self.self_salt else ngram_example[:-1]
-            target = ngram_example[-1]
+            target = ngram_example[-1]  # ngram的最后一个token
             ngram_to_watermark_lookup[ngram_example] = self._get_ngram_score_cached(prefix, target)
 
         return ngram_to_watermark_lookup, frequencies_table
 
+    # 得到seq长度的水印bool tensor
     def _get_green_at_T_booleans(self, input_ids, ngram_to_watermark_lookup) -> tuple[torch.Tensor]:
         """Generate binary list of green vs. red per token, a separate list that ignores repeated ngrams, and a list of offsets to
         convert between both representations:
         green_token_mask = green_token_mask_unique[offsets] except for all locations where otherwise a repeat would be counted
         """
+        # 分别是绿色token掩码（逐个ngram遍历得到）、unique绿色token掩码（忽略重复token）、以及让它们对应起来的offset列表
         green_token_mask, green_token_mask_unique, offsets = [], [], []
-        used_ngrams = {}
+        used_ngrams = {}  # 将遍历过的ngram存到此处，以忽视重复ngram
         unique_ngram_idx = 0
         ngram_examples = ngrams(input_ids.cpu().tolist(), self.context_width + 1 - self.self_salt)
 
         for idx, ngram_example in enumerate(ngram_examples):
+            # 从ngram_to_watermark_lookup字典中找到当前ngram是否包含水印
             green_token_mask.append(ngram_to_watermark_lookup[ngram_example])
             if self.ignore_repeated_ngrams:
                 if ngram_example in used_ngrams:
@@ -351,15 +387,15 @@ class WatermarkDetector(WatermarkBase):
         )
 
     def _score_sequence(
-        self,
-        input_ids: torch.Tensor,
-        return_num_tokens_scored: bool = True,
-        return_num_green_tokens: bool = True,
-        return_green_fraction: bool = True,
-        return_green_token_mask: bool = False,
-        return_z_score: bool = True,
-        return_z_at_T: bool = True,
-        return_p_value: bool = True,
+            self,
+            input_ids: torch.Tensor,
+            return_num_tokens_scored: bool = True,
+            return_num_green_tokens: bool = True,
+            return_green_fraction: bool = True,
+            return_green_token_mask: bool = False,
+            return_z_score: bool = True,
+            return_z_at_T: bool = True,
+            return_p_value: bool = True,
     ):
         ngram_to_watermark_lookup, frequencies_table = self._score_ngrams_in_passage(input_ids)
         green_token_mask, green_unique, offsets = self._get_green_at_T_booleans(input_ids, ngram_to_watermark_lookup)
@@ -376,7 +412,8 @@ class WatermarkDetector(WatermarkBase):
         else:
             num_tokens_scored = sum(frequencies_table.values())
             assert num_tokens_scored == len(input_ids) - self.context_width + self.self_salt
-            green_token_count = sum(freq * outcome for freq, outcome in zip(frequencies_table.values(), ngram_to_watermark_lookup.values()))
+            green_token_count = sum(
+                freq * outcome for freq, outcome in zip(frequencies_table.values(), ngram_to_watermark_lookup.values()))
         assert green_token_count == green_unique.sum()
 
         # HF-style output dictionary
@@ -410,10 +447,10 @@ class WatermarkDetector(WatermarkBase):
         return score_dict
 
     def _score_windows_impl_batched(
-        self,
-        input_ids: torch.Tensor,
-        window_size: str,
-        window_stride: int = 1,
+            self,
+            input_ids: torch.Tensor,
+            window_size: str,
+            window_stride: int = 1,
     ):
         # Implementation details:
         # 1) --ignore_repeated_ngrams is applied globally, and windowing is then applied over the reduced binary vector
@@ -460,7 +497,8 @@ class WatermarkDetector(WatermarkBase):
                 z_score_max_per_window[idx] = maximal_z_score
 
                 z_score_at_effective_T = torch.cummax(batched_z_score, dim=0)[0]
-                cumulative_eff_z_score[size::s] = torch.maximum(cumulative_eff_z_score[size::s], z_score_at_effective_T[:-1])
+                cumulative_eff_z_score[size::s] = torch.maximum(cumulative_eff_z_score[size::s],
+                                                                z_score_at_effective_T[:-1])
                 window_fits = True  # successful computation for any window in sizes
 
         if not window_fits:
@@ -481,17 +519,17 @@ class WatermarkDetector(WatermarkBase):
         )
 
     def _score_sequence_window(
-        self,
-        input_ids: torch.Tensor,
-        return_num_tokens_scored: bool = True,
-        return_num_green_tokens: bool = True,
-        return_green_fraction: bool = True,
-        return_green_token_mask: bool = False,
-        return_z_score: bool = True,
-        return_z_at_T: bool = True,
-        return_p_value: bool = True,
-        window_size: str = None,
-        window_stride: int = 1,
+            self,
+            input_ids: torch.Tensor,
+            return_num_tokens_scored: bool = True,
+            return_num_green_tokens: bool = True,
+            return_green_fraction: bool = True,
+            return_green_token_mask: bool = False,
+            return_z_score: bool = True,
+            return_z_at_T: bool = True,
+            return_p_value: bool = True,
+            window_size: str = None,
+            window_stride: int = 1,
     ):
         (
             optimal_z,
@@ -529,16 +567,16 @@ class WatermarkDetector(WatermarkBase):
         return score_dict
 
     def detect(
-        self,
-        text: str = None,
-        tokenized_text: list[int] = None,
-        window_size: str = None,
-        window_stride: int = None,
-        return_prediction: bool = True,
-        return_scores: bool = True,
-        z_threshold: float = None,
-        convert_to_float: bool = False,
-        **kwargs,
+            self,
+            text: str = None,
+            tokenized_text: list[int] = None,
+            window_size: str = None,
+            window_stride: int = None,
+            return_prediction: bool = True,
+            return_scores: bool = True,
+            z_threshold: float = None,
+            convert_to_float: bool = False,
+            **kwargs,
     ) -> dict:
         """Scores a given string of text and returns a dictionary of results."""
 
@@ -552,13 +590,15 @@ class WatermarkDetector(WatermarkBase):
         if len(self.normalizers) > 0:
             print(f"Text after normalization:\n\n{text}\n")
 
+        # 若未输入tokenized_text，则使用内置tokenizer处理raw text
         if tokenized_text is None:
             assert self.tokenizer is not None, (
                 "Watermark detection on raw string ",
                 "requires an instance of the tokenizer ",
                 "that was used at generation time.",
             )
-            tokenized_text = self.tokenizer(text, return_tensors="pt", add_special_tokens=False)["input_ids"][0].to(self.device)
+            tokenized_text = self.tokenizer(text, return_tensors="pt", add_special_tokens=False)["input_ids"][0].to(
+                self.device)
             if tokenized_text[0] == self.tokenizer.bos_token_id:
                 tokenized_text = tokenized_text[1:]
         else:
@@ -610,16 +650,23 @@ class WatermarkDetector(WatermarkBase):
 # For license information, see https://github.com/nltk/nltk/blob/develop/LICENSE.txt
 ##########################################################################
 
-
+# 输入是分词列表、是否要填充左右侧、以及填充符号=>返回seq的ngram
+# 举例seq=[A,B,C,D], n=2
 def ngrams(sequence, n, pad_left=False, pad_right=False, pad_symbol=None):
     sequence = iter(sequence)
     if pad_left:
+        # 如果要填充左侧，则在seq左边添加n-1个pad_symbol，这样第一和第二个token也可以作为ngram的最后一个token
         sequence = chain((pad_symbol,) * (n - 1), sequence)
     if pad_right:
         sequence = chain(sequence, (pad_symbol,) * (n - 1))
-    iterables = tee(sequence, n)
+    iterables = tee(sequence, n)  # 创建n个【相同的】迭代器副本
 
+    # i和sub_iterable分别是迭代器索引和当前迭代器副本
+    # 得到iter1=[A,B,C,D], iter2=[B,C,D]
     for i, sub_iterable in enumerate(iterables):  # For each window,
+        # 让第i个迭代器从第i个token开始读取
         for _ in range(i):  # iterate through every order of ngrams
             next(sub_iterable, None)  # generate the ngrams within the window.
+    # 将n个错位迭代器组合成ngram
+    # zip每次分别去iter1和2中的第1，2，...个，即得到[AB,BC,CD](iter2没有下一个元素了就终止)
     return zip(*iterables)  # Unpack and flattens the iterables.

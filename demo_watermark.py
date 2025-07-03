@@ -171,6 +171,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def load_model(args):
     """Load and return the model and tokenizer"""
 
@@ -199,6 +200,7 @@ def load_model(args):
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
 
     return model, tokenizer, device
+
 
 def generate(prompt, args, model=None, device=None, tokenizer=None):
     """Instatiate the WatermarkLogitsProcessor according to the watermark parameters

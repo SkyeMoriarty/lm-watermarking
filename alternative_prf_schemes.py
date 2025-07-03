@@ -3,6 +3,7 @@
 Can be hooked into existing WatermarkLogitsProcessor as modified base class WatermarkBase, see implementation in
 extended_watermark_processor.py
 """
+from random import random
 
 # coding=utf-8
 # Copyright 2023 Authors of "A Watermark for Large Language Models"
@@ -57,6 +58,11 @@ def seeding_scheme_lookup(seeding_scheme: str):
         context_width = 5
         self_salt = False
         hash_key = 15485863
+    elif seeding_scheme == "hybrid":
+        prf_type = "multi_anchored_minhash_prf"
+        context_width = 4
+        self_salt = True
+        hash_key = 15485863
     elif seeding_scheme.startswith("ff"):  # freeform seeding scheme API - only use for experimenting
         # expects strings of the form ff-additive_prf-4-True-hash or ff-additive_prf-5-True (hash key is optional)
         split_scheme = seeding_scheme.split("-")
@@ -87,16 +93,21 @@ def minfunc_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
     return salt_key * input_ids.min().item()
 
 
+# hashint函数：将任意整数输入 → 映射为难以预测的、稳定且分布均匀的大整数输出，且保证相近输入不会得到相近输出
+# 取context中确定step的若干个
 def simple_skip_prf(input_ids: torch.LongTensor, salt_key: int, k=2) -> int:
     # k is the skip distance
     return hashint(salt_key * input_ids[::k]).prod().item()
 
 
+# 只取context中的第一个
 def skipgram_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
     # maximum distance skipgram within context
     return hashint(salt_key * input_ids[0]).item()
 
 
+# 取句首+anchor位置的两个token id，分别乘以salt_key，再分别哈希，再相乘（salt_key 是分别作用于每个 token 的 hash 输入）
+# 对比anchored_minhash_prf，盐值直接影响哈希结果，随机性&安全性更高
 def anchored_skipgram_prf(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> int:
     # maximum distance skipgram within context
     return (hashint(salt_key * input_ids[0]) * hashint(salt_key * input_ids[anchor])).item()
@@ -107,9 +118,33 @@ def minhash_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
     return hashint(salt_key * input_ids).min().item()
 
 
+# 对整段+anchor位置的两个token id，分别哈希，再相乘，再乘以salt_key（salt_key 是最后乘在整个 hash 组合之后的结果上）
 def anchored_minhash_prf(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> int:
     # Anchor to one key to produce a min over pairs again
     return (salt_key * hashint(input_ids) * hashint(input_ids[anchor])).min().item()
+
+
+# 在前一个方法的基础上增加了多个anchor、又加入了context和position信息，兼具局部鲁棒性&全文参与
+def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
+                               salt_key: int,
+                               anchors=(0, -1, 'middle', 'random')) -> int:
+    seq_len = len(input_ids)
+    anchor_vals = []
+
+    global_val = additive_prf(input_ids, salt_key)  # sum up all the token ids * salt_key => handle reorder attack
+    position_val = position_prf(input_ids, salt_key)  # multiply token ids with their position => handle context replace attack
+
+    for pos in anchors:
+        if pos == 'middle':
+            index = seq_len // 2
+        elif pos == 'random':  # 注意确保可复现！
+            index = hashint(salt_key + 17) % seq_len
+        elif isinstance(pos, int):  # 防止越界
+            index = pos % seq_len
+        else:
+            continue
+        anchor_vals.append(hashint(salt_key * input_ids[index]).item())  #.item()将tensor张量转为Python标量，且只能用于只包含一个元素的张量
+    return min(anchor_vals + [global_val] + [position_val])
 
 
 def minskipgram_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
@@ -118,6 +153,7 @@ def minskipgram_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> i
     return skipgrams.prod(dim=1).min().item()
 
 
+# 非交换哈希链式累乘，不可逆
 def noncomm_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
     key = torch.as_tensor(salt_key, dtype=torch.long)
     for entry in input_ids:
@@ -126,6 +162,8 @@ def noncomm_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
     return key.item()
 
 
+# 位置加权哈希和：第一个token*1，第二个token*2，...
+# 线性结构，为随机性较弱
 def position_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
     return (salt_key * input_ids * torch.arange(1, len(input_ids) + 1, device=input_ids.device)).sum().item()
 
@@ -142,6 +180,7 @@ prf_lookup = {
     "minskipgram_prf": minskipgram_prf,
     "noncomm_prf": noncomm_prf,
     "position_prf": position_prf,
+    "hybrid_prf": multi_anchored_minhash_prf
 }
 
 # Generate a global permute table once at startup
