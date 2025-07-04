@@ -73,6 +73,7 @@ class WatermarkBase:
 
         # 根据seeding_scheme设置好对应的prf名称，在这里通过prf_lookup字典根据名称键取对应的prf函数
         # 输入input(指定窗口大小)和hash key，得到一个可复现的哈希值
+        
         prf_key = prf_lookup[self.prf_type](input_ids[-self.context_width:], salt_key=self.hash_key)
         # enable for long, interesting streams of pseudorandom numbers: print(prf_key)
         self.rng.manual_seed(prf_key % (2 ** 64 - 1))  # safeguard against overflow from long 防止溢出
