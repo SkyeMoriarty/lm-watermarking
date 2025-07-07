@@ -20,25 +20,25 @@ args = Namespace()
 arg_dict = {
     'run_gradio': True, 
     'demo_public': False, 
-    # 'model_name_or_path': 'facebook/opt-125m', 
+    'model_name_or_path': 'facebook/opt-125m',
     # 'model_name_or_path': 'facebook/opt-1.3b', 
     # 'model_name_or_path': 'facebook/opt-2.7b', 
-    'model_name_or_path': 'facebook/opt-6.7b',
+    # 'model_name_or_path': 'facebook/opt-6.7b',
     # 'model_name_or_path': 'facebook/opt-13b',
     # 'load_fp16' : True,
-    'load_fp16' : False,
+    'load_fp16': False,  # 是否加载为半精度（节省内存）
     'prompt_max_length': None, 
     'max_new_tokens': 200, 
     'generation_seed': 123, 
     'use_sampling': True, 
-    'n_beams': 1, 
-    'sampling_temp': 0.7, 
+    'n_beams': 1,  # 即不使用beam search
+    'sampling_temp': 0.7,  # 控制采样多样性，越低确定性越强
     'use_gpu': True, 
-    'seeding_scheme': 'simple_1', 
+    'seeding_scheme': 'simple_1',  # prf生成策略
     'gamma': 0.25, 
     'delta': 2.0, 
     'normalizers': '', 
-    'ignore_repeated_bigrams': False, 
+    'ignore_repeated_bigrams': False,  # 是否避免重复bigram
     'detection_z_threshold': 4.0, 
     'select_green_tokens': True,
     'skip_model_load': False,

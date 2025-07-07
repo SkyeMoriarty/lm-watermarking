@@ -76,7 +76,8 @@ def main(args):
             # track hyperparameters and run metadata
             config=args
         )
-    
+
+    # 创建输出文件夹
     print(f"Output dir for this run: {args.output_dir}")
     # notify if exists
     if os.path.exists(args.output_dir):
@@ -91,6 +92,7 @@ def main(args):
     ###########################################################################
     hf_model_name = args.model_name
 
+    # encoder-decoder or decoder only?
     if "t5" in hf_model_name or "T0" in hf_model_name:
         model = AutoModelForSeq2SeqLM.from_pretrained(hf_model_name)
     else:
@@ -122,7 +124,7 @@ def main(args):
     
     # log an example
     ds_iterator = iter(dataset)
-    idx = 75 # if this is c4, it's the schumacher example lol
+    idx = 75  # if this is c4, it's the schumacher example lol
     i = 0
     while i < idx: 
         next(ds_iterator)
@@ -139,19 +141,20 @@ def main(args):
     vocab_size = len(all_token_ids)
     print(f"Vocabulary size: {vocab_size}")
 
+    # 定义最大生成文本长度和最小prompt长度
     max_new_tokens = args.max_new_tokens
     min_prompt_tokens = args.min_prompt_tokens
 
     init_seed = args.initial_seed
-    dyna_seed=args.dynamic_seed # type not value
-    bl_proportion = args.bl_proportion
-    bl_logit_bias = args.bl_logit_bias
-    bl_type = args.bl_type
-    n_beams = args.num_beams
+    dyna_seed = args.dynamic_seed  # type not value，markov_1
+    bl_proportion = args.bl_proportion  # gamma
+    bl_logit_bias = args.bl_logit_bias  # delta
+    bl_type = args.bl_type  # soft
+    n_beams = args.num_beams  # 1
     early_stopping = args.early_stopping
     no_repeat_ngram_size = args.no_repeat_ngram_size
     store_bl_ids = args.store_bl_ids
-    store_spike_ents = args.store_spike_ents
+    store_spike_ents = args.store_spike_ents  # True
 
     bl_processor = BlacklistLogitsProcessor(bad_words_ids=None, 
                                             store_bl_ids=store_bl_ids, 
