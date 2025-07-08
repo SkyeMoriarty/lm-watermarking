@@ -131,14 +131,14 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
     seq_len = len(input_ids)
     anchor_vals = []
 
-    global_val = additive_prf(input_ids, salt_key)  # sum up all the token ids * salt_key => handle reorder attack
-    position_val = position_prf(input_ids, salt_key)  # multiply token ids with their position => handle context replace attack
+    global_val = additive_prf(input_ids, salt_key)
+    position_val = position_prf(input_ids, salt_key)
 
     for pos in anchors:
         if pos == 'middle':
             index = seq_len // 2
         elif pos == 'random':  # 注意确保可复现！
-            index = hashint(salt_key + 17) % seq_len
+            index = (salt_key * 17) % seq_len
         elif isinstance(pos, int):  # 防止越界
             index = pos % seq_len
         else:
