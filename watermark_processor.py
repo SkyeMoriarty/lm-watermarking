@@ -148,7 +148,7 @@ class WatermarkDetector(WatermarkBase):
         # truecase是将文本转换为统一的大小写形式
         # 可以有多个normalizer
         normalizers: list[str] = ["unicode"],  # or also: ["unicode", "homoglyphs", "truecase"]
-        ignore_repeated_bigrams: bool = True,
+        ignore_repeated_ngrams: bool = True,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -171,8 +171,8 @@ class WatermarkDetector(WatermarkBase):
         for normalization_strategy in normalizers:
             self.normalizers.append(normalization_strategy_lookup(normalization_strategy))
 
-        self.ignore_repeated_bigrams = ignore_repeated_bigrams
-        if self.ignore_repeated_bigrams:
+        self.ignore_repeated_ngrams = ignore_repeated_ngrams
+        if self.ignore_repeated_ngrams:
             assert self.seeding_scheme == "simple_1", "No repeated bigram credit variant assumes the single token " \
                                                       "seeding scheme. "
 
@@ -204,7 +204,7 @@ class WatermarkDetector(WatermarkBase):
         return_p_value: bool = True,
     ):
         # 忽略重复双元词模式: 仅统计唯一bigram的绿色列表命中情况（避免重复计数，导致绿色token偏高）。
-        if self.ignore_repeated_bigrams:
+        if self.ignore_repeated_ngrams:
             # Method that only counts a green/red hit once per unique bigram.
             # New num total tokens scored (T) becomes the number unique bigrams.
             # We iterate over all unqiue token bigrams in the input, computing the greenlist

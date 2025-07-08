@@ -137,7 +137,7 @@ def parse_args():
              "names to use when performing watermark detection.",
     )
     parser.add_argument(
-        "--ignore_repeated_bigrams",
+        "--ignore_repeated_ngrams",
         type=str2bool,
         default=False,
         help="Whether to use the detection method that only counts each unqiue bigram"
@@ -338,7 +338,7 @@ def detect(input_text, args, device=None, tokenizer=None):
                                            tokenizer=tokenizer,
                                            z_threshold=args.detection_z_threshold,
                                            normalizers=args.normalizers,
-                                           ignore_repeated_bigrams=args.ignore_repeated_bigrams,
+                                           ignore_repeated_ngrams=args.ignore_repeated_ngrams,
                                            select_green_tokens=args.select_green_tokens)
     if len(input_text) - 1 > watermark_detector.min_prefix_len:
         score_dict = watermark_detector.detect(input_text)
@@ -489,7 +489,7 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
                         detection_z_threshold = gr.Slider(label="z-score threshold", minimum=0.0, maximum=10.0,
                                                           step=0.1, value=args.detection_z_threshold)
                     with gr.Row():
-                        ignore_repeated_bigrams = gr.Checkbox(label="Ignore Bigram Repeats")
+                        ignore_repeated_ngrams = gr.Checkbox(label="Ignore Bigram Repeats")
                     with gr.Row():
                         normalizers = gr.CheckboxGroup(label="Normalizations",
                                                        choices=["unicode", "homoglyphs", "truecase"],
@@ -628,8 +628,8 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
         def update_max_new_tokens(session_state, value):
             session_state.max_new_tokens = int(value); return session_state
 
-        def update_ignore_repeated_bigrams(session_state, value):
-            session_state.ignore_repeated_bigrams = value; return session_state
+        def update_ignore_repeated_ngrams(session_state, value):
+            session_state.ignore_repeated_ngrams = value; return session_state
 
         def update_normalizers(session_state, value):
             session_state.normalizers = value; return session_state
@@ -654,7 +654,7 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
         delta.change(update_delta, inputs=[session_args, delta], outputs=[session_args])
         detection_z_threshold.change(update_detection_z_threshold, inputs=[session_args, detection_z_threshold],
                                      outputs=[session_args])
-        ignore_repeated_bigrams.change(update_ignore_repeated_bigrams, inputs=[session_args, ignore_repeated_bigrams],
+        ignore_repeated_ngrams.change(update_ignore_repeated_ngrams, inputs=[session_args, ignore_repeated_ngrams],
                                        outputs=[session_args])
         normalizers.change(update_normalizers, inputs=[session_args, normalizers], outputs=[session_args])
         seed_separately.change(update_seed_separately, inputs=[session_args, seed_separately], outputs=[session_args])
@@ -678,12 +678,12 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
                                      outputs=[with_watermark_detection_result, session_args])
         detection_z_threshold.change(fn=detect_partial, inputs=[detection_input, session_args],
                                      outputs=[detection_result, session_args])
-        ignore_repeated_bigrams.change(lambda value: str(value), inputs=[session_args], outputs=[current_parameters])
-        ignore_repeated_bigrams.change(fn=detect_partial, inputs=[output_without_watermark, session_args],
+        ignore_repeated_ngrams.change(lambda value: str(value), inputs=[session_args], outputs=[current_parameters])
+        ignore_repeated_ngrams.change(fn=detect_partial, inputs=[output_without_watermark, session_args],
                                        outputs=[without_watermark_detection_result, session_args])
-        ignore_repeated_bigrams.change(fn=detect_partial, inputs=[output_with_watermark, session_args],
+        ignore_repeated_ngrams.change(fn=detect_partial, inputs=[output_with_watermark, session_args],
                                        outputs=[with_watermark_detection_result, session_args])
-        ignore_repeated_bigrams.change(fn=detect_partial, inputs=[detection_input, session_args],
+        ignore_repeated_ngrams.change(fn=detect_partial, inputs=[detection_input, session_args],
                                        outputs=[detection_result, session_args])
         normalizers.change(lambda value: str(value), inputs=[session_args], outputs=[current_parameters])
         normalizers.change(fn=detect_partial, inputs=[output_without_watermark, session_args],
