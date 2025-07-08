@@ -180,7 +180,7 @@ prf_lookup = {
     "minskipgram_prf": minskipgram_prf,
     "noncomm_prf": noncomm_prf,
     "position_prf": position_prf,
-    "hybrid_prf": multi_anchored_minhash_prf
+    "multi_anchored_minhash_prf": multi_anchored_minhash_prf
 }
 
 # Generate a global permute table once at startup
