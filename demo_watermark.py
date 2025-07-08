@@ -340,7 +340,8 @@ def detect(input_text, args, device=None, tokenizer=None):
                                            normalizers=args.normalizers,
                                            ignore_repeated_ngrams=args.ignore_repeated_ngrams,
                                            select_green_tokens=args.select_green_tokens)
-    if len(input_text) - 1 > watermark_detector.min_prefix_len:
+    # if len(input_text) - 1 > watermark_detector.min_prefix_len:
+    if len(input_text) - 1 > 1:
         score_dict = watermark_detector.detect(input_text)
         # output = str_format_scores(score_dict, watermark_detector.z_threshold)
         output = list_format_scores(score_dict, watermark_detector.z_threshold)
