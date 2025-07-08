@@ -30,7 +30,7 @@ from transformers import (AutoTokenizer,
                           AutoModelForCausalLM,
                           LogitsProcessorList)
 
-from watermark_processor import WatermarkLogitsProcessor, WatermarkDetector
+from extended_watermark_processor import WatermarkLogitsProcessor, WatermarkDetector
 
 
 def str2bool(v):
