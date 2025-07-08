@@ -38,7 +38,7 @@ arg_dict = {
     'gamma': 0.25, 
     'delta': 2.0, 
     'normalizers': '', 
-    'ignore_repeated_bigrams': False,  # 是否避免重复bigram
+    'ignore_repeated_ngrams': False,  # 是否避免重复bigram
     'detection_z_threshold': 4.0, 
     'select_green_tokens': True,
     'skip_model_load': False,
