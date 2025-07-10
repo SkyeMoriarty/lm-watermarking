@@ -55,11 +55,11 @@ def get_train_data(args):
             print("sent: " + sent)
             print()
             train_data.append(sent)
-        print("len: " + len(train_data))
+        print("len: " + str(len(train_data)))
     return train_data
 
 
-def format_train_data(train_data):
+# def format_train_data(train_data):
 
 
 if __name__ == "__main__":
