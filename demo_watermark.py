@@ -264,7 +264,7 @@ def generate(prompt, args, model=None, device=None, tokenizer=None):
     tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True,
                            max_length=args.prompt_max_length).to(device)
     truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
-    redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)[0]
+    redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)  ## ！！！次数删除了[0]批量处理
 
     torch.manual_seed(args.generation_seed)
     output_without_watermark = generate_without_watermark(**tokd_input)

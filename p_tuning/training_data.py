@@ -1,10 +1,10 @@
 """
     Get training data set for P-tuning v2, using the watermarked system.
     load model =>
-    load dataset =>
-    cut out prompts =>
+    load dataset (prompts)=>
     generate decoded_output_with_watermark =>
-    concatenate
+    concatenate them =>
+    format
 """
 
 from demo_watermark import parse_args, load_model, generate
@@ -43,8 +43,6 @@ def get_train_data(args):
         dataset = load_data()
         # prompts = truncate_prompt(tokenizer, dataset)
         train_data = []
-        # 要想批量处理的话把generate方法中
-        # tokenizer.batch_decode(output_without_watermark, skip_special_tokens=True)[0] 后面的[0]去掉就好了
         for item in dataset:
             prompt = item['text'].strip()
             if len(prompt) == 0:
