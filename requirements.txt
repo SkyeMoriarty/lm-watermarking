@@ -2,7 +2,7 @@ datasets
 gradio
 nltk
 scipy
-torch==2.2.2+cpu
+torch==2.6+cpu
 --index-url https://download.pytorch.org/whl/cpu
 transformers
 tokenizers
