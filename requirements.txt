@@ -1,4 +1,4 @@
-datasets==2.19.0
+datasets
 gradio
 nltk
 scipy

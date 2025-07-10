@@ -22,7 +22,7 @@ def truncate_prompt(tokenizer, dataset, max_tokens=64):
         text = item['text'].strip()
         tokenized = tokenizer(text, truncation=True, max_length=max_tokens, return_tensors="pt")
         prompt_ids = tokenized["input_ids"][0].tolist()  # 0是取batch的第一维
-        print("prompt_ids: " + prompt_ids)
+        print("prompt_ids: " + str(prompt_ids)[1:-1])
         prompts.append(tokenizer.decode(prompt_ids, skip_special_tokens=True))
     return prompts
 
