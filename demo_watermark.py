@@ -34,7 +34,7 @@ from extended_watermark_processor import WatermarkLogitsProcessor, WatermarkDete
 
 
 def str2bool(v):
-    """Util function for user friendly boolean flag args"""
+    """Util function for user-friendly boolean flag args"""
     if isinstance(v, bool):
         return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
