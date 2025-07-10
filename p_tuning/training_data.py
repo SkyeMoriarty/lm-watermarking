@@ -20,6 +20,8 @@ def truncate_prompt(tokenizer, dataset, max_tokens=64):
     prompts = []
     for item in dataset:
         text = item['text'].strip()
+        if not text:
+            continue
         tokenized = tokenizer(text, truncation=True, max_length=max_tokens, return_tensors="pt")
         prompt_ids = tokenized["input_ids"][0].tolist()  # 0是取batch的第一维
         # print("prompt_ids: " + str(prompt_ids)[1:-1])
@@ -39,20 +41,25 @@ def get_train_data(args):
 
     if not args.skip_model_load:
         dataset = load_data()
-        prompts = truncate_prompt(tokenizer, dataset)
+        # prompts = truncate_prompt(tokenizer, dataset)
         train_data = []
         # 要想批量处理的话把generate方法中
         # tokenizer.batch_decode(output_without_watermark, skip_special_tokens=True)[0] 后面的[0]去掉就好了
-        for prompt in prompts:
+        for item in dataset:
+            prompt = item['text'].strip()
             if len(prompt) == 0:
                 continue
             _, _, _, decoded_output_with_watermark, _ = generate(prompt, args, model=model,
                                                                  device=device, tokenizer=tokenizer)
             sent = prompt + " " + decoded_output_with_watermark
             print("sent: " + sent)
+            print()
             train_data.append(sent)
         print("len: " + len(train_data))
     return train_data
+
+
+def format_train_data(train_data):
 
 
 if __name__ == "__main__":
