@@ -1,7 +1,7 @@
 gradio
 nltk
 scipy
-torch
-torchtext~=0.18.0
+torch==2.0.1
+torchtext==0.15.2
 transformers
 tokenizers
