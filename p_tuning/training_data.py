@@ -8,18 +8,18 @@
 """
 
 from demo_watermark import parse_args, load_model, generate
-from torchtext.datasets import WikiText2
+from datasets import load_dataset
 
 
 def load_data():
-    train_data = WikiText2(split='valid')
-    train_texts = list(train_data)
-    return train_texts
+    dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+    return dataset
 
 
-def truncate_prompt(tokenizer, texts, max_tokens=64):
+def truncate_prompt(tokenizer, dataset, max_tokens=64):
     prompts = []
-    for text in texts:
+    for item in dataset:
+        text = item['text'].strip()
         tokenized = tokenizer(text, truncation=True, max_length=max_tokens, return_tensors="pt")
         prompt_ids = tokenized["input_ids"][0].tolist()  # 0是取batch的第一维
         print("prompt_ids: " + prompt_ids)
@@ -38,8 +38,8 @@ def get_train_data(args):
         model, tokenizer, device = None, None, None
 
     if not args.skip_model_load:
-        data = load_data()
-        prompts = truncate_prompt(tokenizer, data)
+        dataset = load_data()
+        prompts = truncate_prompt(tokenizer, dataset)
         train_data = []
         # 要想批量处理的话把generate方法中
         # tokenizer.batch_decode(output_without_watermark, skip_special_tokens=True)[0] 后面的[0]去掉就好了

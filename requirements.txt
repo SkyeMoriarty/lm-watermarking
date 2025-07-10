@@ -2,6 +2,5 @@ gradio
 nltk
 scipy
 torch
-torchtext
 transformers
 tokenizers
