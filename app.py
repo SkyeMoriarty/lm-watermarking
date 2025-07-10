@@ -48,6 +48,6 @@ arg_dict = {
 
 args.__dict__.update(arg_dict)
 
-from p_tuning.training_data import main
+from p_tuning.training_data import get_train_data
 
-main(args)
+get_train_data(args)
