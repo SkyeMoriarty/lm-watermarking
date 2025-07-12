@@ -40,8 +40,8 @@ def get_train_data(args):
         dataset = load_data()
         dataloader = get_dataloader(dataset)
         for prompts in dataloader:  # 遍历batch
-            _, _, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
-                                                                 device=device, tokenizer=tokenizer)
+            _, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
+                                                              device=device, tokenizer=tokenizer)
             print(decoded_output_with_watermark)
             train_data.append(decoded_output_with_watermark)
         print("len: " + str(len(train_data)))

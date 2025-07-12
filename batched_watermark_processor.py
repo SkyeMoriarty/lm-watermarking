@@ -77,43 +77,6 @@ class WatermarkLogitsProcessorBatched(WatermarkBaseBatched, LogitsProcessor):
         if self.store_spike_ents:
             self._init_spike_entropies()
 
-    def _init_spike_entropies(self):
-        alpha = torch.exp(torch.tensor(self.delta)).item()  # 将logit偏置delta转换为【概率空间的乘数】=>改变原来的token概率分布
-        gamma = self.gamma
-
-        # 分子表示非绿色token概率被压缩的程度
-        self.z_value = ((1 - gamma) * (alpha - 1)) / (
-                    1 - gamma + (alpha * gamma))  # 熵的模数-决定熵的敏感度，用于量化【水印对token分布的扰动强度】=>作用于全局，后面用此计算文本熵
-        self.expected_gl_coef = (gamma * alpha) / (
-                    1 - gamma + (alpha * gamma))  # 水印文本中绿色列表token的期望数量（无水印文本中绿色token的比例是gamma）
-
-        # catch for overflow when bias is "infinite"
-        if alpha == torch.inf:
-            self.z_value = 1.0
-            self.expected_gl_coef = 1.0
-
-    def _get_spike_entropies(self):
-        spike_ents = [[] for _ in range(len(self.spike_entropies))]  # 初始化一个二维数组
-        for b_idx, ent_tensor_list in enumerate(self.spike_entropies):  # 按批次遍历
-            for ent_tensor in ent_tensor_list:  # 遍历张量list
-                spike_ents[b_idx].append(ent_tensor.item())
-        return spike_ents
-
-    # 获取当前存储的所有尖峰熵值，并清空存储
-    def _get_and_clear_stored_spike_ents(self):
-        spike_ents = self._get_spike_entropies()
-        self.spike_entropies = None
-        return spike_ents
-
-    # 公式：S(p,z) = \sum{p/(1+zpk)}
-    def _compute_spike_entropy(self, scores):
-        # precomputed z value in init
-        probs = scores.softmax(dim=-1)  # 将logits转换为probs：[batch_size, vocab_size]
-        denoms = 1 + (self.z_value * probs)  # 分母
-        renormed_probs = probs / denoms  # 归一化概率
-        sum_renormed_probs = renormed_probs.sum()  # 求和得到尖峰熵值
-        return sum_renormed_probs
-
     # batched! scores和greenlist_token_ids都是批量的
     def _calc_greenlist_mask(self, scores: torch.FloatTensor, greenlist_token_ids) -> torch.BoolTensor:
         # Cannot lose loop, greenlists might have different lengths
