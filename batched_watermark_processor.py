@@ -33,47 +33,37 @@ class WatermarkBaseBatched:
         # Watermark behavior:
         self.gamma = gamma
         self.delta = delta
-        self.rngs = []
+        self.rngs = None
         self._initialize_seeding_scheme(seeding_scheme)
         # Legacy behavior:
         self.select_green_tokens = select_green_tokens
 
-    # 设置四个内部关键属性：
-    # 1. 伪随机函数prf：决定如何生成哈希值
-    # 2. 上下文宽度，表示依赖的前缀token的数量
-    # 3. 盐值，用于增强哈希的唯一性（是一个随机生成的额外数据，以防止攻击），这里是一个布尔值，如果true，hash key就是盐值
-    # 4. 哈希密钥，用于初始化伪随机数生成器（PRNG）——全局唯一，长期有效
-    # 区别于1.prf_key：临时生成的随机密钥，由hash key+上下文通过哈希函数计算得出
-    # 2. rng：伪随机数生成器，通过prf_key初始化，用于决定green_list的划分
     def _initialize_seeding_scheme(self, seeding_scheme: str) -> None:
         """Initialize all internal settings of the seeding strategy from a colloquial, "public" name for the scheme."""
         self.prf_type, self.context_width, self.self_salt, self.hash_key = seeding_scheme_lookup(seeding_scheme)
 
     def _seed_rng_in_batch(self, input_ids: torch.LongTensor) -> None:
         batch_size, seq_len = input_ids.shape
+
         if seq_len < self.context_width:
             raise ValueError(f"seeding_scheme requires at least a {self.context_width} token prefix to seed the RNG.")
 
-        prf_func = prf_lookup[self.prf_type]
-        prf_keys = [prf_func(input_ids[i][-self.context_width:], salt_key=self.hash_key) for i in range(batch_size)]
-
-        for prf_key in prf_keys:
-            self.rngs.append(prf_key % (2 ** 64 - 1))
+        contexts = input_ids[:, -self.context_width:]  # [batch_size, context_width]
+        prf_func = prf_lookup[self.prf_type]  # 未实现批量计算
+        self.rngs = (prf_func(contexts, self.hash_key)) % (2 ** 64 - 1)   # 形状 [batch_size]
 
     def _get_greenlist_list(self, input_ids: torch.LongTensor) -> torch.LongTensor:
         """Seed rng based on local context width and use this information to generate ids on the green list."""
         self._seed_rng_in_batch(input_ids)  # 调用方法设定随机种子成员变量
-
         greenlist_size = int(self.vocab_size * self.gamma)
-        greenlist_list = []
-        for rng in self.rngs:
-            vocab_permutation = torch.randperm(self.vocab_size, device=input_ids.device,
-                                               generator=torch.Generator(device=input_ids.device).manual_seed(rng))
-            if self.select_green_tokens:  # directly
-                greenlist_ids = vocab_permutation[:greenlist_size]  # new
-            else:  # select green via red
-                greenlist_ids = vocab_permutation[(self.vocab_size - greenlist_size):]  # legacy behavior
-            greenlist_list.append(greenlist_ids)
+
+        generators = [torch.Generator(device=input_ids.device).manual_seed(seed) for seed in self.rngs]
+        perms = torch.stack([
+            torch.randperm(self.vocab_size, generator=gen, device=input_ids.device)
+            for gen in generators
+        ])
+
+        greenlist_list = perms[:, :greenlist_size].tolist()
         return greenlist_list
 
 

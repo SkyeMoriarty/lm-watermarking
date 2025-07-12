@@ -48,6 +48,11 @@ def seeding_scheme_lookup(seeding_scheme: str):
         context_width = 4
         self_salt = True
         hash_key = 15485863
+    elif seeding_scheme == "selfhash_batch":
+        prf_type = "anchored_minhash_prf_batch"
+        context_width = 4
+        self_salt = True
+        hash_key = 15485863
     elif seeding_scheme == "minhash":
         prf_type = "minhash_prf"
         context_width = 4
@@ -124,6 +129,10 @@ def anchored_minhash_prf(input_ids: torch.LongTensor, salt_key: int, anchor: int
     return (salt_key * hashint(input_ids) * hashint(input_ids[anchor])).min().item()
 
 
+def anchored_minhash_prf_batch(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> torch.LongTensor:
+    return (salt_key * hashint(input_ids) * hashint(input_ids[anchor])).min()
+
+
 # 在前一个方法的基础上增加了多个anchor、又加入了context和position信息，兼具局部鲁棒性&全文参与
 def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
                                salt_key: int,
@@ -177,6 +186,7 @@ prf_lookup = {
     "anchored_skipgram_prf": anchored_skipgram_prf,
     "minhash_prf": minhash_prf,
     "anchored_minhash_prf": anchored_minhash_prf,
+    "anchored_minhash_prf_batch": anchored_minhash_prf_batch,
     "minskipgram_prf": minskipgram_prf,
     "noncomm_prf": noncomm_prf,
     "position_prf": position_prf,
