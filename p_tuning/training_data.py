@@ -19,6 +19,7 @@ def load_data():
 
 
 def get_dataloader(dataset, batch_size=16):
+    # collate_fn参数指定如何将一批样本打包成一个batch
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: [e["text"] for e in x])
     return dataloader
 
@@ -39,6 +40,10 @@ def get_train_data(args):
         dataset = load_data()
         dataloader = get_dataloader(dataset)
         for prompts in dataloader:  # 遍历batch
+            print(type(prompts))  # 应该是 <class 'list'>
+            print(len(prompts))  # batch size
+            print(type(prompts[0]))  # 应该是 <class 'str'>
+            print(prompts[0])
             _, _, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
                                                                  device=device, tokenizer=tokenizer)
             print(decoded_output_with_watermark)
