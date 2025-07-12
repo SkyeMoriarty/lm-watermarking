@@ -7,8 +7,10 @@
     format
 """
 
-from demo_watermark import parse_args, load_model, generate
+from demo_watermark import parse_args, load_model
+from watermark import generate
 from datasets import load_dataset
+from torch.utils.data import DataLoader
 
 
 def load_data():
@@ -16,43 +18,31 @@ def load_data():
     return dataset
 
 
-def truncate_prompt(tokenizer, dataset, max_tokens=64):
-    prompts = []
-    for item in dataset:
-        text = item['text'].strip()
-        if not text:
-            continue
-        tokenized = tokenizer(text, truncation=True, max_length=max_tokens, return_tensors="pt")
-        prompt_ids = tokenized["input_ids"][0].tolist()  # 0是取batch的第一维
-        # print("prompt_ids: " + str(prompt_ids)[1:-1])
-        prompts.append(tokenizer.decode(prompt_ids, skip_special_tokens=True))
-    return prompts
+def get_dataloader(dataset, batch_size=16):
+    dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: [e["text"] for e in x])
+    return dataloader
 
 
 def get_train_data(args):
     # Initial arg processing and log
     args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
     print(args)
+    print()
 
     if not args.skip_model_load:
         model, tokenizer, device = load_model(args)
     else:
         model, tokenizer, device = None, None, None
 
+    train_data = []
     if not args.skip_model_load:
         dataset = load_data()
-        # prompts = truncate_prompt(tokenizer, dataset)
-        train_data = []
-        for item in dataset:
-            prompt = item['text'].strip()
-            if len(prompt) == 0:
-                continue
-            _, _, _, decoded_output_with_watermark, _ = generate(prompt, args, model=model,
+        dataloader = get_dataloader(dataset)
+        for prompts in dataloader:  # 遍历batch
+            _, _, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
                                                                  device=device, tokenizer=tokenizer)
-            sent = prompt + " " + decoded_output_with_watermark
-            print("sent: " + sent)
-            print()
-            train_data.append(sent)
+            print(decoded_output_with_watermark)
+            train_data.append(decoded_output_with_watermark)
         print("len: " + str(len(train_data)))
     return train_data
 

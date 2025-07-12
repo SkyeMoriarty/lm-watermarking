@@ -1,19 +1,3 @@
-# coding=utf-8
-# Copyright 2023 Authors of "A Watermark for Large Language Models"
-# available at https://arxiv.org/abs/2301.10226
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from __future__ import annotations
 import collections
 from math import sqrt
@@ -29,7 +13,7 @@ from normalizers import normalization_strategy_lookup
 from alternative_prf_schemes import prf_lookup, seeding_scheme_lookup
 
 
-class WatermarkBase:
+class WatermarkBaseBatched:
     def __init__(
             self,
             vocab: list[int] = None,
@@ -49,7 +33,7 @@ class WatermarkBase:
         # Watermark behavior:
         self.gamma = gamma
         self.delta = delta
-        self.rng = None
+        self.rngs = []
         self._initialize_seeding_scheme(seeding_scheme)
         # Legacy behavior:
         self.select_green_tokens = select_green_tokens
@@ -65,38 +49,34 @@ class WatermarkBase:
         """Initialize all internal settings of the seeding strategy from a colloquial, "public" name for the scheme."""
         self.prf_type, self.context_width, self.self_salt, self.hash_key = seeding_scheme_lookup(seeding_scheme)
 
-    # 为什么input_ids没有取[0]，默认是单条prompt？
-    def _seed_rng(self, input_ids: torch.LongTensor) -> None:
-        """Seed RNG from local context. Not batched, because the generators we use (like cuda.random) are not batched."""
-        # Need to have enough context for seed generation
-        if input_ids.shape[-1] < self.context_width:
+    def _seed_rng_in_batch(self, input_ids: torch.LongTensor) -> None:
+        batch_size, seq_len = input_ids.shape
+        if seq_len < self.context_width:
             raise ValueError(f"seeding_scheme requires at least a {self.context_width} token prefix to seed the RNG.")
 
-        # 根据seeding_scheme设置好对应的prf名称，在这里通过prf_lookup字典根据名称键取对应的prf函数
-        # 输入input(指定窗口大小)和hash key，得到一个可复现的哈希值
-        prf_key = prf_lookup[self.prf_type](input_ids[-self.context_width:], salt_key=self.hash_key)
-        # enable for long, interesting streams of pseudorandom numbers: print(prf_key)
-        self.rng.manual_seed(prf_key % (2 ** 64 - 1))  # safeguard against overflow from long 防止溢出
+        prf_func = prf_lookup[self.prf_type]
+        prf_keys = [prf_func(input_ids[i][-self.context_width:], salt_key=self.hash_key) for i in range(batch_size)]
 
+        for prf_key in prf_keys:
+            self.rngs.append(prf_key % (2 ** 64 - 1))
 
-    def _get_greenlist_ids(self, input_ids: torch.LongTensor) -> torch.LongTensor:
+    def _get_greenlist_list(self, input_ids: torch.LongTensor) -> torch.LongTensor:
         """Seed rng based on local context width and use this information to generate ids on the green list."""
-        self._seed_rng(input_ids)  # 调用方法设定随机种子成员变量
+        self._seed_rng_in_batch(input_ids)  # 调用方法设定随机种子成员变量
 
         greenlist_size = int(self.vocab_size * self.gamma)
-        # torch.randperm用于打乱原张量顺序，随机排列
-        vocab_permutation = torch.randperm(self.vocab_size, device=input_ids.device, generator=self.rng)
-        if self.select_green_tokens:  # directly
-            greenlist_ids = vocab_permutation[:greenlist_size]  # new
-        else:  # select green via red
-            greenlist_ids = vocab_permutation[(self.vocab_size - greenlist_size):]  # legacy behavior
-        return greenlist_ids
+        greenlist_list = []
+        for rng in self.rngs:
+            vocab_permutation = torch.randperm(self.vocab_size, device=input_ids.device, generator=rng)
+            if self.select_green_tokens:  # directly
+                greenlist_ids = vocab_permutation[:greenlist_size]  # new
+            else:  # select green via red
+                greenlist_ids = vocab_permutation[(self.vocab_size - greenlist_size):]  # legacy behavior
+            greenlist_list.append(greenlist_ids)
+        return greenlist_list
 
 
-class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
-    """LogitsProcessor modifying model output scores in a pipe. Can be used in any HF pipeline to modify scores to fit the watermark,
-    but can also be used as a standalone tool inserted for any model producing scores inbetween model outputs and next token sampler.
-    """
+class WatermarkLogitsProcessorBatched(WatermarkBaseBatched, LogitsProcessor):
 
     def __init__(self, *args, store_spike_ents: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -111,17 +91,16 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
         gamma = self.gamma
 
         # 分子表示非绿色token概率被压缩的程度
-        self.z_value = ((1 - gamma) * (alpha - 1)) / (1 - gamma + (alpha * gamma))  # 熵的模数-决定熵的敏感度，用于量化【水印对token分布的扰动强度】=>作用于全局，后面用此计算文本熵
-        self.expected_gl_coef = (gamma * alpha) / (1 - gamma + (alpha * gamma))  # 水印文本中绿色列表token的期望数量（无水印文本中绿色token的比例是gamma）
+        self.z_value = ((1 - gamma) * (alpha - 1)) / (
+                    1 - gamma + (alpha * gamma))  # 熵的模数-决定熵的敏感度，用于量化【水印对token分布的扰动强度】=>作用于全局，后面用此计算文本熵
+        self.expected_gl_coef = (gamma * alpha) / (
+                    1 - gamma + (alpha * gamma))  # 水印文本中绿色列表token的期望数量（无水印文本中绿色token的比例是gamma）
 
         # catch for overflow when bias is "infinite"
         if alpha == torch.inf:
             self.z_value = 1.0
             self.expected_gl_coef = 1.0
 
-    # 以Python标量形式存储多个批次的尖峰熵张量
-    # 理解张量和Python标量，为什么要互相转化？
-    # 张量是Pytorch特有的结构，而外部系统只支持原生的Python类型；张量会保留梯度信息和设备位置（如GPU）
     def _get_spike_entropies(self):
         spike_ents = [[] for _ in range(len(self.spike_entropies))]  # 初始化一个二维数组
         for b_idx, ent_tensor_list in enumerate(self.spike_entropies):  # 按批次遍历
@@ -144,6 +123,7 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
         sum_renormed_probs = renormed_probs.sum()  # 求和得到尖峰熵值
         return sum_renormed_probs
 
+    # batched! scores和greenlist_token_ids都是批量的
     def _calc_greenlist_mask(self, scores: torch.FloatTensor, greenlist_token_ids) -> torch.BoolTensor:
         # Cannot lose loop, greenlists might have different lengths
         green_tokens_mask = torch.zeros_like(scores, dtype=torch.bool)
@@ -157,64 +137,57 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
         scores[greenlist_mask] = scores[greenlist_mask] + greenlist_bias
         return scores
 
-    # 对应selfhash规则，按照score rank逐个筛选candidate token：check validity ⇒ final green list
+    # batched
+    # greedy！scores降序排列，测试其前k个token是否满足
     def _score_rejection_sampling(self, input_ids: torch.LongTensor, scores: torch.FloatTensor,
-                                  tail_rule="fixed_compute") -> list[int]:
-        """Generate greenlist based on current candidate next token. Reject and move on if necessary. Method not batched.
-        This is only a partial version of Alg.3 "Robust Private Watermarking", as it always assumes greedy sampling. It will still (kinda)
-        work for all types of sampling, but less effectively.
-        To work efficiently, this function can switch between a number of rules for handling the distribution tail.
-        These are not exposed by default.
-        """
-        # 得分和token id
-        sorted_scores, greedy_predictions = scores.sort(dim=-1, descending=True)
+                                  k=50) -> list[int]:
+        # 得分和token id，针对批量scores依然成立
+        sorted_scores, greedy_predictions = scores[:, :k].sort(dim=-1, descending=True)
+        batch_size, top_k = greedy_predictions.shape
 
-        final_greenlist = []
-        for idx, prediction_candidate in enumerate(greedy_predictions):
-            greenlist_ids = self._get_greenlist_ids(
-                torch.cat([input_ids, prediction_candidate[None]], dim=0))  # add candidate to prefix
-            if prediction_candidate in greenlist_ids:  # test for consistency
-                final_greenlist.append(prediction_candidate)
+        # 储存所有的k种拼接方式，input+prediction（在最后一个维度相加）
+        expanded_inputs = torch.cat([
+            # 扩充第二维为[B,1,L]，也就是给每一个seq再套上一层
+            # expand -1表示保留原有维度，top_k表示把每个seq复制top_k次
+            input_ids.unsqueeze(1).expand(-1, top_k, -1),  # [B, K, L]
+            # greedy_predictions本来是[B,K]，-1表示最后增加一个维度
+            greedy_predictions.unsqueeze(-1)  # [B, K, 1]
+        ], dim=-1).reshape(batch_size * top_k, -1)  # [B*K, L+1]
 
-            # What follows below are optional early-stopping rules for efficiency
-            # 不会暴力遍历 vocab 中所有 token → 固定尝试若干个高概率候选即可
-            if tail_rule == "fixed_score":
-                if sorted_scores[0] - sorted_scores[idx + 1] > self.delta:
-                    break
-            elif tail_rule == "fixed_list_length":
-                if len(final_greenlist) == 10:
-                    break
-            elif tail_rule == "fixed_compute":
-                if idx == 40:
-                    break
-            else:
-                pass  # do not break early-依旧暴力遍历
-        return torch.as_tensor(final_greenlist, device=input_ids.device)
+        # 针对每一种拼接得到一个对应的green list，得到一个包含B*K个green list的list
+        batched_greenlists = self._get_greenlist_list(expanded_inputs)  # [B*K, fixed_len]
+        flat_candidates = greedy_predictions.flatten()  # [B*K]
+        is_green = torch.tensor([
+            candidate.item() in greenlist
+            for candidate, greenlist in zip(flat_candidates, batched_greenlists)
+        ], device=input_ids.device).reshape(batch_size, top_k)  # [B, K]
+
+        # 得到长度不一的green list
+        final_greenlists = [[] for _ in range(batch_size)]
+        for batch_index in range(batch_size):
+            curr_predictions = greedy_predictions[batch_index]
+            curr_bool = is_green[batch_index]
+            for i in range(k):
+                if curr_bool[i]:
+                    final_greenlists[batch_index].append(curr_predictions[i])
+
+        # return torch.as_tensor(final_greenlist, device=input_ids.device)
+        return final_greenlists
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
         """Call with previous context as input_ids, and scores for next token."""
 
         # this is lazy to allow us to co-locate on the watermarked model's device
-        self.rng = torch.Generator(device=input_ids.device) if self.rng is None else self.rng
+        self.rngs = torch.Generator(device=input_ids.device) if self.rngs is None else self.rngs
 
-        # NOTE, it would be nice to get rid of this batch loop, but currently,
-        # the seed and partition operations are not tensor/vectorized, thus
-        # each sequence in the batch needs to be treated separately.
+        if self.self_salt:  # 只有seeding_scheme == "algorithm-3" or "selfhash"的盐值是True
+            list_of_greenlist_ids = self._score_rejection_sampling(input_ids, scores)
+        else:
+            list_of_greenlist_ids = self._get_greenlist_list(input_ids)
 
-        list_of_greenlist_ids = [None for _ in input_ids]  # Greenlists could differ in length
-        for b_idx, input_seq in enumerate(input_ids):
-            if self.self_salt:  # 只有seeding_scheme == "algorithm-3" or "selfhash"的盐值是True
-                greenlist_ids = self._score_rejection_sampling(input_seq, scores[b_idx])
-            else:
-                greenlist_ids = self._get_greenlist_ids(input_seq)
-            list_of_greenlist_ids[b_idx] = greenlist_ids
-
-            # logic for computing and storing spike entropies for analysis
-            # 尖峰熵在这里只是计算、存储，以作分析，没有对其进行什么筛选判断
-            if self.store_spike_ents:
-                if self.spike_entropies is None:
-                    self.spike_entropies = [[] for _ in range(input_ids.shape[0])]
-                self.spike_entropies[b_idx].append(self._compute_spike_entropy(scores[b_idx]))
+        # logic for computing and storing spike entropies for analysis
+        # 尖峰熵在这里只是计算、存储，以作分析，没有对其进行什么筛选判断
+        # if self.store_spike_ents:
 
         green_tokens_mask = self._calc_greenlist_mask(scores=scores, greenlist_token_ids=list_of_greenlist_ids)
         scores = self._bias_greenlist_logits(scores=scores, greenlist_mask=green_tokens_mask, greenlist_bias=self.delta)
@@ -222,7 +195,7 @@ class WatermarkLogitsProcessor(WatermarkBase, LogitsProcessor):
         return scores
 
 
-class WatermarkDetector(WatermarkBase):
+class WatermarkDetectorBatched(WatermarkBaseBatched):
     """This is the detector for all watermarks imprinted with WatermarkLogitsProcessor.
 
     关键是复现green list的生成过程-需要和生成过程相同的device & [tokenizer] & seeding_scheme & delta & gamma
