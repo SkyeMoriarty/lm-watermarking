@@ -18,7 +18,7 @@ def load_data():
     return dataset
 
 
-def get_dataloader(dataset, batch_size=4):
+def get_dataloader(dataset, batch_size=8):
     # collate_fn参数指定如何将一批样本打包成一个batch
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: [e["text"] for e in x])
     return dataloader
