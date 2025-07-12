@@ -120,7 +120,7 @@ class WatermarkLogitsProcessorBatched(WatermarkBaseBatched, LogitsProcessor):
         green_tokens_mask = torch.zeros_like(scores, dtype=torch.bool)
         for b_idx, greenlist in enumerate(greenlist_token_ids):
             if len(greenlist) > 0:
-                green_tokens_mask[b_idx][greenlist] = True
+                green_tokens_mask[b_idx, greenlist] = True
         return green_tokens_mask
 
     def _bias_greenlist_logits(self, scores: torch.Tensor, greenlist_mask: torch.Tensor,
