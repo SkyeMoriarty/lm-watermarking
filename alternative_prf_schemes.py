@@ -130,7 +130,19 @@ def anchored_minhash_prf(input_ids: torch.LongTensor, salt_key: int, anchor: int
 
 
 def anchored_minhash_prf_batch(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> torch.LongTensor:
-    return (salt_key * hashint(input_ids) * hashint(input_ids[anchor])).min()
+    # 1. 计算hashint(input_ids) [batch_size, context_width]
+    hashed_ids = hashint(input_ids)
+
+    # 2. 计算hashint(anchor tokens) [batch_size]
+    # 假设anchor是固定位置，如每个样本的第0个token
+    anchor_ids = input_ids[:, anchor]  # [batch_size]
+    hashed_anchors = hashint(anchor_ids)  # [batch_size]
+
+    # 3. 批量计算 [batch_size, context_width]
+    salted = salt_key * hashed_ids * hashed_anchors.unsqueeze(1)  # 广播
+
+    # 4. 对每个样本取最小值 [batch_size]
+    return salted.min(dim=1).values
 
 
 # 在前一个方法的基础上增加了多个anchor、又加入了context和position信息，兼具局部鲁棒性&全文参与

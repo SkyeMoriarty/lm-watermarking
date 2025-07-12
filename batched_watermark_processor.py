@@ -49,8 +49,8 @@ class WatermarkBaseBatched:
             raise ValueError(f"seeding_scheme requires at least a {self.context_width} token prefix to seed the RNG.")
 
         contexts = input_ids[:, -self.context_width:]  # [batch_size, context_width]
-        prf_func = prf_lookup[self.prf_type]  # 未实现批量计算
-        self.rngs = (prf_func(contexts, self.hash_key)) % (2 ** 64 - 1)   # 形状 [batch_size]
+        prf_func = prf_lookup[self.prf_type]
+        self.rngs = (prf_func(contexts, self.hash_key)) % (2 ** 64 - 1)   # [batch_size]
 
     def _get_greenlist_list(self, input_ids: torch.LongTensor) -> torch.LongTensor:
         """Seed rng based on local context width and use this information to generate ids on the green list."""
