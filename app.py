@@ -29,7 +29,7 @@ arg_dict = {
     # 'load_fp16' : True,
     'load_fp16': False,  # 是否加载为半精度（节省内存）
     'prompt_max_length': None, 
-    'max_new_tokens': 200, 
+    'max_new_tokens': 32,  # 200
     'generation_seed': 123, 
     'use_sampling': True, 
     'n_beams': 1,  # 即不使用beam search
