@@ -28,7 +28,7 @@ arg_dict = {
     # 'model_name_or_path': 'EleutherAI/gpt-neo-125M',
     # 'load_fp16' : True,
     'load_fp16': False,  # 是否加载为半精度（节省内存）
-    'prompt_max_length': None, 
+    'prompt_max_length': 64,
     'max_new_tokens': 200,  # 200
     'generation_seed': 123, 
     'use_sampling': True, 

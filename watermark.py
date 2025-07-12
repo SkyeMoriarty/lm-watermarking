@@ -52,6 +52,8 @@ def generate(prompts, args, model=None, device=None, tokenizer=None):
 
     torch.manual_seed(args.generation_seed)
     output_with_watermark = generate_with_watermark(**tokd_input)
+    print(output_with_watermark)
+    print()
 
     # decoder only的模型生成文本会带有prompt，所以要切割
     # if args.is_decoder_only_model:
