@@ -67,7 +67,8 @@ class WatermarkBaseBatched:
         greenlist_size = int(self.vocab_size * self.gamma)
         greenlist_list = []
         for rng in self.rngs:
-            vocab_permutation = torch.randperm(self.vocab_size, device=input_ids.device, generator=rng)
+            vocab_permutation = torch.randperm(self.vocab_size, device=input_ids.device,
+                                               generator=torch.Generator(device=input_ids.device).manual_seed(rng))
             if self.select_green_tokens:  # directly
                 greenlist_ids = vocab_permutation[:greenlist_size]  # new
             else:  # select green via red
