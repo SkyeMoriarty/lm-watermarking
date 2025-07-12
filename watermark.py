@@ -44,7 +44,8 @@ def generate(prompts, args, model=None, device=None, tokenizer=None):
     else:
         args.prompt_max_length = 2048 - args.max_new_tokens
 
-    tokd_input = tokenizer(prompts, return_tensors="pt", add_special_tokens=True, truncation=True, padding=True,
+    tokd_input = tokenizer(prompts, return_tensors="pt", add_special_tokens=True, truncation=True,
+                           padding=True, padding_side='left',
                            max_length=args.prompt_max_length).to(device)
     truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
     redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)

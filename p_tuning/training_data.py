@@ -40,10 +40,6 @@ def get_train_data(args):
         dataset = load_data()
         dataloader = get_dataloader(dataset)
         for prompts in dataloader:  # 遍历batch
-            print(type(prompts))  # 应该是 <class 'list'>
-            print(len(prompts))  # batch size
-            print(type(prompts[0]))  # 应该是 <class 'str'>
-            print(prompts[0])
             _, _, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
                                                                  device=device, tokenizer=tokenizer)
             print(decoded_output_with_watermark)
