@@ -139,10 +139,6 @@ class WatermarkLogitsProcessorBatched(WatermarkBaseBatched, LogitsProcessor):
         else:
             list_of_greenlist_ids = self._get_greenlist_list(input_ids)
 
-        # logic for computing and storing spike entropies for analysis
-        # 尖峰熵在这里只是计算、存储，以作分析，没有对其进行什么筛选判断
-        # if self.store_spike_ents:
-
         green_tokens_mask = self._calc_greenlist_mask(scores=scores, greenlist_token_ids=list_of_greenlist_ids)
         scores = self._bias_greenlist_logits(scores=scores, greenlist_mask=green_tokens_mask, greenlist_bias=self.delta)
 

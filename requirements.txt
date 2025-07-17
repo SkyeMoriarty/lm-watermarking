@@ -1,8 +1,13 @@
 datasets
 gradio
 nltk
-scipy
 torch==2.6+cpu
 --index-url https://download.pytorch.org/whl/cpu
-transformers
-tokenizers
+transformers~=4.17.0
+tokenizers~=0.21.3
+tqdm~=4.67.1
+numpy~=1.23.2
+huggingface_hub~=0.25.1
+sacremoses~=0.0.53
+h5py~=3.6.0
+requests~=2.28.1
