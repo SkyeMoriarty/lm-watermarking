@@ -6,7 +6,7 @@ random.seed(42)
 tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")  # T5就是做span replacement的
 model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-small")
 
-
+# test
 # 【随机】选择一个词用<extra_id_0> and <extra_id_1>包围——可复现！
 # 返回原词和masked tokens
 def get_masked_tokens(text):
