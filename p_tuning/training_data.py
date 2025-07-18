@@ -43,12 +43,12 @@ def get_train_data(args):
         for prompts in dataloader:  # 遍历batch
             redecoded_input, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
                                                                             device=device, tokenizer=tokenizer)
-            print("Input: \n")
+            print()
+            print("Input: ")
             print(redecoded_input)
             print()
-            print("Target: \n")
+            print("Target: ")
             print(decoded_output_with_watermark)
-            print()
             train_data.append(decoded_output_with_watermark)
         print("len: " + str(len(train_data)))
     return train_data

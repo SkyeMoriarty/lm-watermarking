@@ -29,7 +29,8 @@ from functools import cache
 props = {
     "prf_type": str,  # string name of the underlying PRF mapping multiple token ids to a random seed
     "context_width": int,  # this is h in the paper, how many previous tokens should be considered for each PRF
-    "self_salt": bool,  # Use the rules laid in robust-watermarking to use the token itself to seed and possibly reject its own list
+    "self_salt": bool,
+    # Use the rules laid in robust-watermarking to use the token itself to seed and possibly reject its own list
     "hash_key": int,  # integer, large prime, used to move seed away from low-entrop bit sequences in PRF chosen above
 }
 
@@ -68,6 +69,11 @@ def seeding_scheme_lookup(seeding_scheme: str):
         context_width = 4
         self_salt = True
         hash_key = 15485863
+    elif seeding_scheme == "hybrid_batch":
+        prf_type = "multi_anchored_minhash_prf_batch"
+        context_width = 4
+        self_salt = True
+        hash_key = 15485863
     elif seeding_scheme.startswith("ff"):  # freeform seeding scheme API - only use for experimenting
         # expects strings of the form ff-additive_prf-4-True-hash or ff-additive_prf-5-True (hash key is optional)
         split_scheme = seeding_scheme.split("-")
@@ -91,6 +97,10 @@ def multiplicative_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
 
 def additive_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
     return salt_key * input_ids.sum().item()
+
+
+def additive_prf_batch(input_ids: torch.LongTensor, salt_key: int) -> torch.LongTensor:
+    return salt_key * input_ids.sum(dim=-1)
 
 
 def minfunc_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
@@ -164,8 +174,35 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
             index = pos % seq_len
         else:
             continue
-        anchor_vals.append(hashint(salt_key * input_ids[index]).item())  #.item()将tensor张量转为Python标量，且只能用于只包含一个元素的张量
+        anchor_vals.append(hashint(salt_key * input_ids[index]).item())  # .item()将tensor张量转为Python标量，且只能用于只包含一个元素的张量
     return min(anchor_vals + [global_val] + [position_val])
+
+
+def multi_anchored_minhash_prf_batch(input_ids: torch.LongTensor,
+                                     salt_key: int,
+                                     anchors=(0, -1, 'middle', 'random')) -> torch.LongTensor:
+    seq_len = input_ids.shape[-1]
+
+    global_val = additive_prf_batch(input_ids, salt_key)
+    position_val = position_prf_batch(input_ids, salt_key)
+
+    anchor_vals = []
+
+    for pos in anchors:
+        if pos == 'middle':
+            index = seq_len // 2
+        elif pos == 'random':  # 注意确保可复现！
+            index = (salt_key * 17) % seq_len
+        elif isinstance(pos, int):  # 防止越界
+            index = pos % seq_len
+        else:
+            continue
+        anchor_vals.append(hashint(salt_key * input_ids[:, index]).to(input_ids.device))
+
+    all_vals = anchor_vals + [global_val, position_val]  # list of (batch_size,) tensors
+    stacked = torch.stack(all_vals, dim=0)  # shape: (num_sources, batch_size)
+    minhash = stacked.min(dim=0).values  # shape: (batch_size,)
+    return minhash
 
 
 def minskipgram_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
@@ -179,14 +216,18 @@ def noncomm_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
     key = torch.as_tensor(salt_key, dtype=torch.long)
     for entry in input_ids:
         key *= hashint(key * entry)
-        key %= 2**32
+        key %= 2 ** 32
     return key.item()
 
 
 # 位置加权哈希和：第一个token*1，第二个token*2，...
 # 线性结构，为随机性较弱
-def position_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
+def position_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
     return (salt_key * input_ids * torch.arange(1, len(input_ids) + 1, device=input_ids.device)).sum().item()
+
+
+def position_prf_batch(input_ids: torch.LongTensor, salt_key: int) -> torch.LongTensor:
+    return (salt_key * input_ids * torch.arange(1, len(input_ids.shape[-1]) + 1, device=input_ids.device)).sum(dim=-1)
 
 
 prf_lookup = {
@@ -202,7 +243,8 @@ prf_lookup = {
     "minskipgram_prf": minskipgram_prf,
     "noncomm_prf": noncomm_prf,
     "position_prf": position_prf,
-    "multi_anchored_minhash_prf": multi_anchored_minhash_prf
+    "multi_anchored_minhash_prf": multi_anchored_minhash_prf,
+    "multi_anchored_minhash_prf_batch": multi_anchored_minhash_prf_batch
 }
 
 # Generate a global permute table once at startup
@@ -214,7 +256,8 @@ fixed_table = torch.randperm(1_000_003, device=torch.device("cpu"), generator=rn
 
 def hashint(integer_tensor: torch.LongTensor) -> torch.LongTensor:
     """Sane version, in the end we only need a small permutation table."""
-    return fixed_table[integer_tensor.cpu() % table_size] + 1  # minor cheat here, this function always return CPU values
+    return fixed_table[
+               integer_tensor.cpu() % table_size] + 1  # minor cheat here, this function always return CPU values
 
 
 def _hashint_avalanche_tensor(integer_tensor: torch.LongTensor):
@@ -234,7 +277,7 @@ def _hashint_avalanche_tensor(integer_tensor: torch.LongTensor):
 def _hashint_avalanche_int(integer: int):
     """http://burtleburtle.net/bob/hash/integer.html, runs in base python, caches based on access.
     Does this make sense for signed 64bit ints?"""
-    i = integer % (2**32)
+    i = integer % (2 ** 32)
     i -= i << 6
     i ^= i >> 17
     i -= i << 9
