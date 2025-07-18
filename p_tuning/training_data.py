@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 
 def load_data():
-    dataset = load_dataset("ag_news", cache_dir="~/.cache/huggingface/datasets")
+    dataset = load_dataset("ag_news", split="train", trust_remote_code=True)
     return dataset
 
 
