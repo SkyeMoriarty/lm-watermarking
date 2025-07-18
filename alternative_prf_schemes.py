@@ -227,7 +227,7 @@ def position_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
 
 
 def position_prf_batch(input_ids: torch.LongTensor, salt_key: int) -> torch.LongTensor:
-    return (salt_key * input_ids * torch.arange(1, len(input_ids.shape[-1]) + 1, device=input_ids.device)).sum(dim=-1)
+    return (salt_key * input_ids * torch.arange(1, input_ids.shape[-1] + 1, device=input_ids.device)).sum(dim=-1)
 
 
 prf_lookup = {
