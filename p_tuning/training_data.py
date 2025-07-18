@@ -17,7 +17,7 @@ import json
 
 def load_data():
     dataset = load_dataset("ag_news", split="train")
-    subset = dataset.select(range(10000))
+    subset = dataset.select(range(1000))
     return subset
 
 
@@ -62,7 +62,8 @@ def get_train_data(args):
             print()
             print("Target: ")
             print(decoded_output_with_watermark)
-            save_to_json(inputs, targets)
+
+    save_to_json(inputs, targets)
 
 
 if __name__ == "__main__":
