@@ -15,10 +15,11 @@ from torch.utils.data import DataLoader
 
 def load_data():
     dataset = load_dataset("ag_news", split="train")
-    return dataset
+    subset = dataset.select(range(10000))
+    return subset
 
 
-def get_dataloader(dataset, batch_size=8):
+def get_dataloader(dataset, batch_size=2):
     # collate_fn参数指定如何将一批样本打包成一个batch
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: [e["text"] for e in x])
     return dataloader
@@ -40,10 +41,14 @@ def get_train_data(args):
         dataset = load_data()
         dataloader = get_dataloader(dataset)
         for prompts in dataloader:  # 遍历batch
-            _, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
-                                                              device=device, tokenizer=tokenizer)
-            # print(decoded_output_with_watermark)
-            # print()
+            redecoded_input, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
+                                                                            device=device, tokenizer=tokenizer)
+            print("Input: \n")
+            print(redecoded_input)
+            print()
+            print("Target: \n")
+            print(decoded_output_with_watermark)
+            print()
             train_data.append(decoded_output_with_watermark)
         print("len: " + str(len(train_data)))
     return train_data
