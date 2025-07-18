@@ -21,7 +21,7 @@ def load_data():
     return subset
 
 
-def get_dataloader(dataset, batch_size=4):
+def get_dataloader(dataset, batch_size=2):
     # collate_fn参数指定如何将一批样本打包成一个batch
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: [e["text"] for e in x])
     return dataloader
@@ -62,8 +62,7 @@ def get_train_data(args):
             print()
             print("Target: ")
             print(decoded_output_with_watermark)
-
-    save_to_json(inputs, targets)
+            save_to_json(inputs, targets)
 
 
 if __name__ == "__main__":
