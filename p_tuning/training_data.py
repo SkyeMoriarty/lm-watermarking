@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 
 def load_data():
-    dataset = load_dataset("dbpedia_14", split="train")
+    dataset = load_dataset("ag_news", split="train")
     return dataset
 
 
