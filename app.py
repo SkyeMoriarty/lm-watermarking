@@ -36,7 +36,7 @@ arg_dict = {
     'n_beams': 1,  # 即不使用beam search
     'sampling_temp': 0.7,  # 控制采样多样性，越低确定性越强
     'use_gpu': True, 
-    'seeding_scheme': 'hybrid',  # prf生成策略
+    'seeding_scheme': 'hybrid_batch',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
     'gamma': 0.25, 
     'delta': 2.0, 
     'normalizers': '', 
