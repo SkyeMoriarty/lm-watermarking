@@ -54,7 +54,8 @@ def train(model, tokenized_dataset):
         save_total_limit=1,
         logging_steps=10,
         save_steps=500,
-        logging_dir="./logs"
+        logging_dir="./logs",
+        label_names=["labels"]
     )
 
     trainer = Trainer(
@@ -70,7 +71,7 @@ def train(model, tokenized_dataset):
 def get_ptuned_opt(args):
     dataset = load_training_data()
     tokenizer, model = load_configured_model(args)
-    tokenized_dataset = dataset.map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])  # 移除原始列名
+    tokenized_dataset = dataset['train'].map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])  # 移除原始列名
     train(model, tokenized_dataset)
 
     # 保存 Prefix 参数
