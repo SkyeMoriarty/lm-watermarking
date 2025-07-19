@@ -203,15 +203,15 @@ def load_model(args):
     base_model = None
     if args.is_peft_model:
         if args.is_seq2seq_model:
-            base_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path)
+            base_model = AutoModelForSeq2SeqLM.from_pretrained(args.base_model_path)
         elif args.is_decoder_only_model:
             if args.load_fp16:
-                base_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path,
-                                                             torch_dtype=torch.float16, device_map='auto')
+                base_model = AutoModelForCausalLM.from_pretrained(args.base_model_path,
+                                                                  torch_dtype=torch.float16, device_map='auto')
             else:
-                base_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, device_map='auto')
+                base_model = AutoModelForCausalLM.from_pretrained(args.base_model_path, device_map='auto')
         else:
-            raise ValueError(f"Unknown model type: {args.model_name_or_path}")
+            raise ValueError(f"Unknown model type: {args.base_model_path}")
         model = PeftModel.from_pretrained(base_model, args.model_name_or_path)
         tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
     else:
@@ -628,19 +628,24 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
         # State management logic
         # update callbacks that change the state dict
         def update_sampling_temp(session_state, value):
-            session_state.sampling_temp = float(value); return session_state
+            session_state.sampling_temp = float(value);
+            return session_state
 
         def update_generation_seed(session_state, value):
-            session_state.generation_seed = int(value); return session_state
+            session_state.generation_seed = int(value);
+            return session_state
 
         def update_gamma(session_state, value):
-            session_state.gamma = float(value); return session_state
+            session_state.gamma = float(value);
+            return session_state
 
         def update_delta(session_state, value):
-            session_state.delta = float(value); return session_state
+            session_state.delta = float(value);
+            return session_state
 
         def update_detection_z_threshold(session_state, value):
-            session_state.detection_z_threshold = float(value); return session_state
+            session_state.detection_z_threshold = float(value);
+            return session_state
 
         def update_decoding(session_state, value):
             if value == "multinomial":
@@ -662,22 +667,28 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
                 return gr.update(visible=True)
 
         def update_n_beams(session_state, value):
-            session_state.n_beams = value; return session_state
+            session_state.n_beams = value;
+            return session_state
 
         def update_max_new_tokens(session_state, value):
-            session_state.max_new_tokens = int(value); return session_state
+            session_state.max_new_tokens = int(value);
+            return session_state
 
         def update_ignore_repeated_ngrams(session_state, value):
-            session_state.ignore_repeated_ngrams = value; return session_state
+            session_state.ignore_repeated_ngrams = value;
+            return session_state
 
         def update_normalizers(session_state, value):
-            session_state.normalizers = value; return session_state
+            session_state.normalizers = value;
+            return session_state
 
         def update_seed_separately(session_state, value):
-            session_state.seed_separately = value; return session_state
+            session_state.seed_separately = value;
+            return session_state
 
         def update_select_green_tokens(session_state, value):
-            session_state.select_green_tokens = value; return session_state
+            session_state.select_green_tokens = value;
+            return session_state
 
         # registering callbacks for toggling the visibilty of certain parameters
         decoding.change(toggle_sampling_vis, inputs=[decoding], outputs=[sampling_temp])
@@ -694,7 +705,7 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
         detection_z_threshold.change(update_detection_z_threshold, inputs=[session_args, detection_z_threshold],
                                      outputs=[session_args])
         ignore_repeated_ngrams.change(update_ignore_repeated_ngrams, inputs=[session_args, ignore_repeated_ngrams],
-                                       outputs=[session_args])
+                                      outputs=[session_args])
         normalizers.change(update_normalizers, inputs=[session_args, normalizers], outputs=[session_args])
         seed_separately.change(update_seed_separately, inputs=[session_args, seed_separately], outputs=[session_args])
         select_green_tokens.change(update_select_green_tokens, inputs=[session_args, select_green_tokens],
@@ -719,11 +730,11 @@ def run_gradio(args, model=None, device=None, tokenizer=None):
                                      outputs=[detection_result, session_args])
         ignore_repeated_ngrams.change(lambda value: str(value), inputs=[session_args], outputs=[current_parameters])
         ignore_repeated_ngrams.change(fn=detect_partial, inputs=[output_without_watermark, session_args],
-                                       outputs=[without_watermark_detection_result, session_args])
+                                      outputs=[without_watermark_detection_result, session_args])
         ignore_repeated_ngrams.change(fn=detect_partial, inputs=[output_with_watermark, session_args],
-                                       outputs=[with_watermark_detection_result, session_args])
+                                      outputs=[with_watermark_detection_result, session_args])
         ignore_repeated_ngrams.change(fn=detect_partial, inputs=[detection_input, session_args],
-                                       outputs=[detection_result, session_args])
+                                      outputs=[detection_result, session_args])
         normalizers.change(lambda value: str(value), inputs=[session_args], outputs=[current_parameters])
         normalizers.change(fn=detect_partial, inputs=[output_without_watermark, session_args],
                            outputs=[without_watermark_detection_result, session_args])
