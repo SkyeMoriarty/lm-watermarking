@@ -72,6 +72,7 @@ def get_ptuned_opt(args):
     dataset = load_training_data()
     tokenizer, model = load_configured_model(args)
     tokenized_dataset = dataset['train'].map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])  # 移除原始列名
+    print(type(tokenized_dataset))
     train(model, tokenized_dataset)
 
     # 保存 Prefix 参数
