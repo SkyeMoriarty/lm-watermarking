@@ -14,7 +14,8 @@ def tokenize_fn(single, tokenizer):
     tokenized = tokenizer(full_input,
                           padding="max_length",
                           truncation=True,
-                          max_length=256)
+                          max_length=256,
+                          return__tensors=None,)
     tokenized["labels"] = tokenized["input_ids"].clone()
     return tokenized
 
