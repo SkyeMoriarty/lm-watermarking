@@ -24,6 +24,7 @@ import numpy  # for gradio hot reload
 import gradio as gr
 
 import torch
+from peft import PeftModel
 
 from transformers import (AutoTokenizer,
                           AutoModelForSeq2SeqLM,
@@ -176,6 +177,18 @@ def parse_args():
         default=False,
         help="Whether to run model in float16 precision.",
     )
+    parser.add_argument(
+        "--is_peft_model",
+        type=str2bool,
+        default=False,
+        help="Whether is a prefix-embedding fine-tuned model."
+    )
+    parser.add_argument(
+        "--base_model_path",
+        type=str,
+        default="facebook/opt-1.3b",
+        help="Base model, path to pretrained model or model identifier from huggingface.co/models.",
+    )
     args = parser.parse_args()
     return args
 
@@ -186,18 +199,26 @@ def load_model(args):
     args.is_seq2seq_model = any([(model_type in args.model_name_or_path) for model_type in ["t5", "T0"]])
     args.is_decoder_only_model = any([(model_type in args.model_name_or_path) for model_type in
                                       ["gpt", "opt", "bloom"]])
-    if args.is_seq2seq_model:
-        model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path)
-    elif args.is_decoder_only_model:
-        # fp16通常用于大模型，device_map='auto'，可使得模型在加载时自动【分层分配】到可用设备
-        if args.load_fp16:
-            model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path,
-                                                         torch_dtype=torch.float16, device_map='auto')
-        # 而fp32用于小模型，这里可以不指定device_map，在后面统一移动到指定设备model = model.to(device)
-        else:
-            model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, device_map='auto')
+
+    # 待优化！！！
+    if args.is_peft_model:
+        base_model = AutoModelForCausalLM.from_pretrained(args.base_model_path, device_map='auto')
+        model = PeftModel.from_pretrained(base_model, args.model_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
     else:
-        raise ValueError(f"Unknown model type: {args.model_name_or_path}")
+        if args.is_seq2seq_model:
+            model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path)
+        elif args.is_decoder_only_model:
+            # fp16通常用于大模型，device_map='auto'，可使得模型在加载时自动【分层分配】到可用设备
+            if args.load_fp16:
+                model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path,
+                                                             torch_dtype=torch.float16, device_map='auto')
+            # 而fp32用于小模型，这里可以不指定device_map，在后面统一移动到指定设备model = model.to(device)
+            else:
+                model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, device_map='auto')
+        else:
+            raise ValueError(f"Unknown model type: {args.model_name_or_path}")
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
 
     if args.use_gpu:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -208,8 +229,6 @@ def load_model(args):
     else:
         device = "cpu"
     model.eval()
-
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
 
     return model, tokenizer, device
 

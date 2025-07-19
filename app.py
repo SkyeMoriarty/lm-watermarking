@@ -45,6 +45,8 @@ arg_dict = {
     'select_green_tokens': True,
     'skip_model_load': False,
     'seed_separately': True,
+    'is_peft_model': True,
+    'base_model_path': 'facebook/opt-1.3b',
 }
 
 args.__dict__.update(arg_dict)
