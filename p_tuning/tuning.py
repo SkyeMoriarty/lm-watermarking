@@ -1,4 +1,6 @@
 from datasets import load_dataset
+from torch.utils.data import Dataset
+
 from demo_watermark import load_model
 from peft import get_peft_model, PrefixTuningConfig, TaskType
 from transformers import Trainer, TrainingArguments
@@ -73,6 +75,10 @@ def get_ptuned_opt(args):
     tokenizer, model = load_configured_model(args)
     tokenized_dataset = dataset['train'].map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])  # 移除原始列名
     print(type(tokenized_dataset))
+    print(isinstance(tokenized_dataset, Dataset))
+    print(tokenized_dataset[0].keys())
+    print(tokenized_dataset[0]['attention_mask'].shape)
+
     train(model, tokenized_dataset)
 
     # 保存 Prefix 参数
