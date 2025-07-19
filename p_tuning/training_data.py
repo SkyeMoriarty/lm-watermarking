@@ -41,9 +41,9 @@ def get_train_data(args):
     print()
 
     if not args.skip_model_load:
-        model, tokenizer, device = load_model(args)
+        model, tokenizer, device, _ = load_model(args)
     else:
-        model, tokenizer, device = None, None, None
+        model, tokenizer, device, _ = None, None, None, None
 
     inputs = []  # 存储list[str]的列表
     targets = []

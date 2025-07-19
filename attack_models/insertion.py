@@ -11,4 +11,3 @@ def get_inserted_tokens(text):
 
 
 def insertion_attack(text, epsilon, max_attempts=50):
-    
