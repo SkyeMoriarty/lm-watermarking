@@ -11,12 +11,16 @@ def load_training_data(path='./p_tuning_data.jsonl'):
 
 
 def tokenize_fn(single, tokenizer):
+    print("single type: " + str(isinstance(single["input"], str)))
     full_input = single['input'] + ' ' + single['target']
     tokenized = tokenizer(full_input,
                           padding="max_length",
                           truncation=True,
                           max_length=256,
                           return_tensors=None,)
+
+    if isinstance(tokenized['attention_mask'][0], list):  # 如果是嵌套列表
+        tokenized['attention_mask'] = tokenized['attention_mask'][0]  # 取第一个元素
     tokenized["labels"] = tokenized["input_ids"].copy()
     return tokenized
 
@@ -73,9 +77,6 @@ def get_ptuned_opt(args):
     dataset = load_training_data()
     tokenizer, model = load_configured_model(args)
     tokenized_dataset = dataset['train'].map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])  # 移除原始列名
-    print(type(tokenized_dataset))
-    print(isinstance(tokenized_dataset, Dataset))
-    print(tokenized_dataset[0].keys())
     print(len(tokenized_dataset[0]['attention_mask']))
 
     train(model, tokenized_dataset)
