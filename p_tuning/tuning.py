@@ -1,5 +1,4 @@
-from datasets import load_dataset
-from torch.utils.data import Dataset
+from datasets import load_dataset, Dataset
 
 from demo_watermark import load_model
 from peft import get_peft_model, PrefixTuningConfig, TaskType
