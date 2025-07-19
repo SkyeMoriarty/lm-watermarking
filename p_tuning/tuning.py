@@ -44,6 +44,7 @@ def load_configured_model(args):
 
 
 def train(model, tokenized_dataset):
+    print("Start finetuning...")
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
         per_device_train_batch_size=4,
@@ -63,6 +64,7 @@ def train(model, tokenized_dataset):
     )
 
     trainer.train()
+    print("Finished!")
 
 
 def get_ptuned_opt(args):
