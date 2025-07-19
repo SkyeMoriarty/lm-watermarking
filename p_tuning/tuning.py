@@ -77,7 +77,7 @@ def get_ptuned_opt(args):
     print(type(tokenized_dataset))
     print(isinstance(tokenized_dataset, Dataset))
     print(tokenized_dataset[0].keys())
-    print(tokenized_dataset[0]['attention_mask'].shape)
+    print(len(tokenized_dataset[0]['attention_mask']))
 
     train(model, tokenized_dataset)
 
