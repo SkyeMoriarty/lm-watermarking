@@ -274,7 +274,7 @@ class WatermarkDetector(WatermarkBase):
             return_green_token_mask: bool = False,
             return_all_window_scores: bool = False,
             return_z_score: bool = True,
-            return_z_at_T: bool = True,
+            return_z_at_T: bool = False,
             return_p_value: bool = True,
     ):
         # HF-style output dictionary
