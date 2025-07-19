@@ -26,7 +26,7 @@ arg_dict = {
     # 'model_name_or_path': 'facebook/opt-6.7b',
     # 'model_name_or_path': 'facebook/opt-13b',
     # 'model_name_or_path': 'EleutherAI/gpt-neo-125M',
-    'model_name_or_path': './p_tuning/ptuned_opt',
+    'model_name_or_path': './ptuned_opt',
     # 'load_fp16' : True,
     'load_fp16': False,  # 是否加载为半精度（节省内存）
     'prompt_max_length': 64,
