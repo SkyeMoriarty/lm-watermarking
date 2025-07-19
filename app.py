@@ -21,11 +21,12 @@ arg_dict = {
     'run_gradio': False,
     'demo_public': False, 
     # 'model_name_or_path': 'facebook/opt-125m',
-    'model_name_or_path': 'facebook/opt-1.3b',
+    # 'model_name_or_path': 'facebook/opt-1.3b',
     # 'model_name_or_path': 'facebook/opt-2.7b', 
     # 'model_name_or_path': 'facebook/opt-6.7b',
     # 'model_name_or_path': 'facebook/opt-13b',
     # 'model_name_or_path': 'EleutherAI/gpt-neo-125M',
+    'model_name_or_path': './p_tuning/ptuned_opt',
     # 'load_fp16' : True,
     'load_fp16': False,  # 是否加载为半精度（节省内存）
     'prompt_max_length': 64,
@@ -35,7 +36,7 @@ arg_dict = {
     'n_beams': 1,  # 即不使用beam search
     'sampling_temp': 0.7,  # 控制采样多样性，越低确定性越强
     'use_gpu': True, 
-    'seeding_scheme': 'hybrid_batch',  # prf生成策略
+    'seeding_scheme': 'hybrid',  # prf生成策略
     'gamma': 0.25, 
     'delta': 2.0, 
     'normalizers': '', 
@@ -48,6 +49,10 @@ arg_dict = {
 
 args.__dict__.update(arg_dict)
 
-from p_tuning.tuning import get_ptuned_opt
+# from p_tuning.tuning import get_ptuned_opt
+#
+# get_ptuned_opt(args)
 
-get_ptuned_opt(args)
+from demo_watermark import main
+
+main(args)
