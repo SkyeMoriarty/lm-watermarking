@@ -200,9 +200,18 @@ def load_model(args):
     args.is_decoder_only_model = any([(model_type in args.model_name_or_path) for model_type in
                                       ["gpt", "opt", "bloom"]])
 
-    # 待优化！！！
+    base_model = None
     if args.is_peft_model:
-        base_model = AutoModelForCausalLM.from_pretrained(args.base_model_path, device_map='auto')
+        if args.is_seq2seq_model:
+            base_model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path)
+        elif args.is_decoder_only_model:
+            if args.load_fp16:
+                base_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path,
+                                                             torch_dtype=torch.float16, device_map='auto')
+            else:
+                base_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, device_map='auto')
+        else:
+            raise ValueError(f"Unknown model type: {args.model_name_or_path}")
         model = PeftModel.from_pretrained(base_model, args.model_name_or_path)
         tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
     else:
@@ -226,14 +235,17 @@ def load_model(args):
             pass
         else:
             model = model.to(device)
+            if base_model is not None:
+                base_model = base_model.to(device)
+                base_model.eval()
     else:
         device = "cpu"
     model.eval()
 
-    return model, tokenizer, device
+    return model, tokenizer, device, base_model
 
 
-def generate(prompt, args, model=None, device=None, tokenizer=None):
+def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=None):
     """Instantiate the WatermarkLogitsProcessor according to the watermark parameters
        and generate watermarked text by passing it to the generate method of the model
        as a logits processor. """
@@ -262,10 +274,17 @@ def generate(prompt, args, model=None, device=None, tokenizer=None):
 
     # partial将一个函数和部分参数预先绑定，生成一个新的参数更少的函数
     # new_func = partial(original_func, **fixed_args)
-    generate_without_watermark = partial(
-        model.generate,
-        **gen_kwargs
-    )
+    # 一个干净的对照组
+    if args.is_peft_model:
+        generate_without_watermark = partial(
+            base_model.generate,
+            **gen_kwargs
+        )
+    else:
+        generate_without_watermark = partial(
+            model.generate,
+            **gen_kwargs
+        )
     generate_with_watermark = partial(
         model.generate,
         logits_processor=LogitsProcessorList([watermark_processor]),
@@ -736,9 +755,9 @@ def main(args):
     print(args)
 
     if not args.skip_model_load:
-        model, tokenizer, device = load_model(args)
+        model, tokenizer, device, base_model = load_model(args)
     else:
-        model, tokenizer, device = None, None, None
+        model, tokenizer, device, base_model = None, None, None, None
 
     # Generate and detect, report to stdout
     if not args.skip_model_load:
@@ -776,7 +795,8 @@ def main(args):
                                                                                             args,
                                                                                             model=model,
                                                                                             device=device,
-                                                                                            tokenizer=tokenizer)
+                                                                                            tokenizer=tokenizer,
+                                                                                            base_model=base_model)
         without_watermark_detection_result = detect(decoded_output_without_watermark,
                                                     args,
                                                     device=device,
