@@ -41,10 +41,10 @@ def is_successful(text, k=20, num_beams=50):
     return False, None
 
 
-def replacement_attack(text, epsilon, max_attempts=50):
+def replacement_attack(text, epsilon=0.1, max_attempts=50):
     tokens = tokenizer.tokenize(text)
     T = len(tokens)
-    replacement_num = T*epsilon
+    replacement_num = int(T*epsilon)
     num = 0
     attempt = 0
 
