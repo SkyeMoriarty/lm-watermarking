@@ -17,7 +17,7 @@ import json
 
 def load_data():
     dataset = load_dataset("ag_news", split="train")
-    subset = dataset.select(range(2001, 5001))
+    subset = dataset.select(range(2000))
     return subset
 
 
@@ -28,7 +28,7 @@ def get_dataloader(dataset, batch_size=2):
 
 
 def save_to_json(inputs, targets):
-    with open("./p_tuning_data.jsonl", "w") as f:
+    with open("./p_tuning_data.jsonl", "a") as f:
         for input, target in zip(inputs, targets):
             json.dump({"input": input, "target": target}, f)
             f.write("\n")
