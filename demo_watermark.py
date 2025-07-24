@@ -308,7 +308,8 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
     output_without_watermark = generate_without_watermark(**tokd_input)
 
     # 强制两次生成从完全相同的随机数初始状态开始
-    # optional to seed before second generation, but will not be the same again generally, unless delta==0.0, no-op watermark
+    # optional to seed before second generation,
+    # but will not be the same again generally, unless delta==0.0, no-op watermark
     if args.seed_separately:
         torch.manual_seed(args.generation_seed)
     output_with_watermark = generate_with_watermark(**tokd_input)
@@ -329,7 +330,6 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
             decoded_output_without_watermark,
             decoded_output_with_watermark,
             args)
-    # decoded_output_with_watermark)
 
 
 def format_names(s):
