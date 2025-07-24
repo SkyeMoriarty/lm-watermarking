@@ -6,7 +6,7 @@ from attack_models.replacement import replacement_attack
 from datasets import load_dataset
 
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:5]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
 
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
@@ -24,7 +24,7 @@ fieldnames = [
     "attacked z score",
     "attacked prediction",
 ]
-output_path = "./result.csv"
+output_path = "./replacement_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -37,15 +37,7 @@ def save_to_csv(output_dicts):
         writer.writerows(output_dicts)
 
 
-def get_single_output_dict(args, input, epsilon=0.1):
-    args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
-
-    # 加载模型、分词器、device
-    if not args.skip_model_load:
-        model, tokenizer, device, _ = load_model(args)
-    else:
-        model, tokenizer, device, _ = None, None, None, None
-
+def get_single_output_dict(args, input, model, tokenizer, device, epsilon=0.1):
     output_dict = {}
 
     if args.use_sampling:
@@ -66,11 +58,6 @@ def get_single_output_dict(args, input, epsilon=0.1):
     # 分别检测有/无受攻击的水印文本
     original_result, _ = detect(output_with_watermark, args, device=device, tokenizer=tokenizer)
     original_result = dict(original_result)
-    # print("original watermarked completion: " + output_with_watermark)
-    # print("green fraction: " + original_result['Fraction of T in Greenlist'])
-    # print("z score: " + original_result['z-score'])
-    # print("prediction: " + original_result['Prediction'])
-    # print()
     output_dict["original watermarked completion"] = output_with_watermark
     output_dict["original green fraction"] = original_result['Fraction of T in Greenlist']
     output_dict["original z score"] = original_result['z-score']
@@ -78,10 +65,6 @@ def get_single_output_dict(args, input, epsilon=0.1):
 
     attacked_result, _ = detect(attacked_output, args, device=device, tokenizer=tokenizer)
     attacked_result = dict(attacked_result)
-    # print("attacked watermarked completion: " + attacked_output)
-    # print("green fraction: " + attacked_result['Fraction of T in Greenlist'])
-    # print("z score: " + attacked_result['z-score'])
-    # print("prediction: " + attacked_result['Prediction'])
     output_dict["attacked watermarked completion"] = attacked_output
     output_dict["attacked green fraction"] = attacked_result['Fraction of T in Greenlist']
     output_dict["attacked z score"] = attacked_result['z-score']
@@ -91,13 +74,20 @@ def get_single_output_dict(args, input, epsilon=0.1):
 
 
 def get_output_dicts(args):
-    output_dicts = {}
+    args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
+
+    # 加载模型、分词器、device
+    if not args.skip_model_load:
+        model, tokenizer, device, _ = load_model(args)
+    else:
+        model, tokenizer, device, _ = None, None, None, None
+
+    output_dicts = []
 
     for item in dataset:
         text = item["article"]
-        print("text: " + text)
         for epsilon in epsilons:
-            output_dicts.update(get_single_output_dict(args, text, epsilon))
+            output_dicts.append(get_single_output_dict(args, text, model, tokenizer, device, epsilon))
 
     save_to_csv(output_dicts)
     return output_dicts
