@@ -2,7 +2,7 @@ from abc import ABC
 
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 import random
-from attack_interface import Attacker
+from attack_models.attack_interface import Attacker
 
 random.seed(42)
 
