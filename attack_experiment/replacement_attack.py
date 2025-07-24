@@ -26,7 +26,7 @@ input_text = (
     "feet.[9] The species is"
 )
 
-dataset = load_dataset("c4", "en", split="train[:500]")
+# dataset = load_dataset("c4", "en", split="train[:500]")
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
 
