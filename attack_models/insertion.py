@@ -1,5 +1,8 @@
+from abc import ABC
+
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 import random
+from attack_interface import Attacker
 
 random.seed(42)
 
@@ -29,19 +32,20 @@ def insert(text, device):
     )
 
     generated = tokenizer.decode(output[0], skip_special_tokens=True)
-    inserted_tokens = inserted_tokens[: i] + [generated] + inserted_tokens[i+2:]
+    inserted_tokens = inserted_tokens[: i] + [generated] + inserted_tokens[i + 2:]
     inserted = tokenizer.convert_tokens_to_string(inserted_tokens)
     return inserted
 
 
-def insertion_attack(text, device, epsilon=0.1):
-    tokens = tokenizer.tokenize(text)
-    T = len(tokens)
-    replacement_num = int(T * epsilon)
-    num = 0
+class Insertion(Attacker, ABC):
+    def attack(self, text, device, epsilon=0.1):
+        tokens = tokenizer.tokenize(text)
+        T = len(tokens)
+        replacement_num = int(T * epsilon)
+        num = 0
 
-    while num < replacement_num:
-        text = insert(text, device)
-        num += 1
+        while num < replacement_num:
+            text = text.insert(text, device)
+            num += 1
 
-    return text
+        return text

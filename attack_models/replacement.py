@@ -1,5 +1,9 @@
+from abc import ABC
+
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 import random
+
+from attack_models.attack_interface import Attacker
 
 random.seed(42)
 
@@ -42,20 +46,21 @@ def is_successful(text, device, k=20, num_beams=50):
     return False, None
 
 
-def replacement_attack(text, device, epsilon=0.1, max_attempts=50):
-    tokens = tokenizer.tokenize(text)
-    T = len(tokens)
-    replacement_num = int(T*epsilon)
-    num = 0
-    attempt = 0
+class Replacement(Attacker, ABC):
+    def attack(self, text, device, epsilon=0.1, max_attempts=50):
+        tokens = tokenizer.tokenize(text)
+        T = len(tokens)
+        replacement_num = int(T*epsilon)
+        num = 0
+        attempt = 0
 
-    while num < replacement_num:
-        attempt += 1
-        if attempt > max_attempts:
-            break
-        success, replaced_text = is_successful(text, device)
-        if success:
-            num += 1
-            text = replaced_text
+        while num < replacement_num:
+            attempt += 1
+            if attempt > max_attempts:
+                break
+            success, replaced_text = is_successful(text, device)
+            if success:
+                num += 1
+                text = replaced_text
 
-    return text
+        return text

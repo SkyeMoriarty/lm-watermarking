@@ -2,32 +2,46 @@ import csv
 import os
 
 from demo_watermark import load_model, generate, detect
-from attack_models.replacement import replacement_attack
-from attack_models.insertion import insertion_attack
-from attack_models.deletion import deletion_attack
+from attack_models.replacement import Replacement
+from attack_models.insertion import Insertion
+from attack_models.deletion import Deletion
 from datasets import load_dataset
 
 
 dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
 
 epsilons = [0.1, 0.3, 0.5, 0.9]
+attackers = [Replacement(), Insertion(), Deletion()]
+attacker_names = ["replaced", "inserted", "deleted"]
 
 fieldnames = [
     "sampling",
     "epsilon",
     "z threshold",
     "prompt",
+
     "original watermarked completion",
     "original green fraction",
     "original z score",
     "original prediction",
+
     "attack type",
-    "attacked watermarked completion",
-    "attacked green fraction",
-    "attacked z score",
-    "attacked prediction",
+    "replaced watermarked completion",
+    "replaced green fraction",
+    "replaced z score",
+    "replaced prediction",
+
+    "inserted watermarked completion",
+    "inserted green fraction",
+    "inserted z score",
+    "inserted prediction",
+
+    "deleted watermarked completion",
+    "deleted green fraction",
+    "deleted z score",
+    "deleted prediction",
 ]
-output_path = "./deletion_attack_result.csv"
+output_path = "./attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -56,10 +70,6 @@ def get_single_output_dict(args, input, model, base_model, tokenizer, device, ep
                                                                              base_model=base_model)
     output_dict["prompt"] = prompt
 
-    # 攻击水印文本
-    # 在同一个epsilon下使用三种攻击
-    attacked_output = deletion_attack(output_with_watermark, device)
-
     # 分别检测有/无受攻击的水印文本
     original_result, _ = detect(output_with_watermark, args, device=device, tokenizer=tokenizer)
     original_result = dict(original_result)
@@ -68,12 +78,19 @@ def get_single_output_dict(args, input, model, base_model, tokenizer, device, ep
     output_dict["original z score"] = original_result['z-score']
     output_dict["original prediction"] = original_result['Prediction']
 
-    attacked_result, _ = detect(attacked_output, args, device=device, tokenizer=tokenizer)
-    attacked_result = dict(attacked_result)
-    output_dict["attacked watermarked completion"] = attacked_output
-    output_dict["attacked green fraction"] = attacked_result['Fraction of T in Greenlist']
-    output_dict["attacked z score"] = attacked_result['z-score']
-    output_dict["attacked prediction"] = attacked_result['Prediction']
+    # 攻击水印文本
+    # 在同一个epsilon下使用三种攻击
+    for i in range(3):
+        attacker = attackers[i]
+        attacker_name = attacker_names[i]
+        output_dict["attack type"] = attacker_name
+        attacked_output = attacker.attack(output_with_watermark, device)
+        attacked_result, _ = detect(attacked_output, args, device=device, tokenizer=tokenizer)
+        attacked_result = dict(attacked_result)
+        output_dict[attacker_name + " watermarked completion"] = attacked_output
+        output_dict[attacker_name + " green fraction"] = attacked_result['Fraction of T in Greenlist']
+        output_dict[attacker_name + "z score"] = attacked_result['z-score']
+        output_dict[attacker_name + "prediction"] = attacked_result['Prediction']
 
     return output_dict
 
@@ -88,11 +105,11 @@ def get_output_dicts(args):
         model, tokenizer, device, base_model = None, None, None, None
 
     output_dicts = []
-
     for item in dataset:
         text = item["article"]
         for epsilon in epsilons:
-            output_dicts.append(get_single_output_dict(args, text, model, base_model, tokenizer, device, epsilon))
+            output_dicts.append(get_single_output_dict(args, text, model, base_model,
+                                                       tokenizer, device, epsilon))
 
     save_to_csv(output_dicts)
     return output_dicts
