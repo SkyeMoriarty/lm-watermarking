@@ -2,6 +2,7 @@ datasets
 gradio
 nltk
 peft
+spacy
 scipy
 torch
 transformers
