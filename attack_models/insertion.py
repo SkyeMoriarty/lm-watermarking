@@ -45,7 +45,7 @@ class Insertion(Attacker, ABC):
         num = 0
 
         while num < replacement_num:
-            text = text.insert(text, device)
+            text = insert(text, device)
             num += 1
 
         return text

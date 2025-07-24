@@ -67,7 +67,7 @@ def get_single_origin_output_dict(args, text, model, base_model, tokenizer, devi
                                                                              base_model=base_model)
     output_dict["prompt"] = prompt
 
-    # 分别检测有/无受攻击的水印文本
+    # 检测未受攻击的水印文本
     original_result, _ = detect(output_with_watermark, args, device=device, tokenizer=tokenizer)
     original_result = dict(original_result)
     output_dict["original watermarked completion"] = output_with_watermark
