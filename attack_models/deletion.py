@@ -1,6 +1,6 @@
 import random
 import spacy
-from transformers import T5ForConditionalGeneration, AutoTokenizer
+from transformers import AutoTokenizer
 
 
 nlp = spacy.load("en_core_web_sm")
