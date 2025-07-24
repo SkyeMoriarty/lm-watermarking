@@ -63,6 +63,6 @@ args.__dict__.update(arg_dict)
 #
 # get_train_data(args)
 
-from attack_experiment.replacement_attack import main
+from attack_experiment.replacement_attack import get_output_dicts
 
-main(args)
+get_output_dicts(args)
