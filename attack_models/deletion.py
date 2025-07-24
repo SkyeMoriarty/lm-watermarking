@@ -8,7 +8,7 @@ tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")
 random.seed(42)
 
 
-def deletion_attack(text, epsilon=0.1):
+def deletion_attack(text, device, epsilon=0.1):
     doc = nlp(text)
     tokens = [token.text for token in doc]
     pos_tags = [token.pos_ for token in doc]

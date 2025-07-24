@@ -29,7 +29,7 @@ def insert(text, device):
     )
 
     generated = tokenizer.decode(output[0], skip_special_tokens=True)
-    inserted_tokens = inserted_tokens[: i] + generated + inserted_tokens[i+2:]
+    inserted_tokens = inserted_tokens[: i] + [generated] + inserted_tokens[i+2:]
     inserted = tokenizer.convert_tokens_to_string(inserted_tokens)
     return inserted
 
