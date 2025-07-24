@@ -3,10 +3,11 @@ import os
 
 from demo_watermark import parse_args, load_model, generate, detect
 from attack_models.replacement import replacement_attack
+from attack_models.insertion import insertion_attack
 from datasets import load_dataset
 
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:500]")
 
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
@@ -19,12 +20,13 @@ fieldnames = [
     "original green fraction",
     "original z score",
     "original prediction",
+    "attack type",
     "attacked watermarked completion",
     "attacked green fraction",
     "attacked z score",
     "attacked prediction",
 ]
-output_path = "./new_replacement_attack_result.csv"
+output_path = "./hybrid_replacement_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -54,7 +56,8 @@ def get_single_output_dict(args, input, model, base_model, tokenizer, device, ep
     output_dict["prompt"] = prompt
 
     # 攻击水印文本
-    attacked_output = replacement_attack(output_with_watermark, device)
+    # 在同一个epsilon下使用三种攻击
+    attacked_output = insertion_attack(output_with_watermark, device)
 
     # 分别检测有/无受攻击的水印文本
     original_result, _ = detect(output_with_watermark, args, device=device, tokenizer=tokenizer)
