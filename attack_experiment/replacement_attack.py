@@ -62,7 +62,7 @@ def main(args, input=input_text, epsilon=0.1):
     output_dict["prompt"] = prompt
 
     # 攻击水印文本
-    attacked_output = replacement_attack(output_with_watermark)
+    attacked_output = replacement_attack(output_with_watermark, device)
 
     # 分别检测有/无受攻击的水印文本
     original_result, _ = detect(output_with_watermark, args, device=device, tokenizer=tokenizer)

@@ -19,11 +19,12 @@ def get_masked_tokens(text):
 
 # 用T5模型得到k=20个candidate替换词
 # 根据和原词是否一致判断攻击是否成功
-def is_successful(text, k=20, num_beams=50):
+def is_successful(text, device, k=20, num_beams=50):
     origin, masked, i = get_masked_tokens(text)
     masked_text = tokenizer.convert_tokens_to_string(masked)
 
-    input_ids = tokenizer(masked_text, return_tensors="pt").input_ids.to("cuda")
+    input_ids = tokenizer(masked_text, return_tensors="pt").input_ids.to(device)
+    model.to(device)
     outputs = model.generate(
         input_ids,
         max_length=10,  # replacement的长度
@@ -41,7 +42,7 @@ def is_successful(text, k=20, num_beams=50):
     return False, None
 
 
-def replacement_attack(text, epsilon=0.1, max_attempts=50):
+def replacement_attack(text, device, epsilon=0.1, max_attempts=50):
     tokens = tokenizer.tokenize(text)
     T = len(tokens)
     replacement_num = int(T*epsilon)
@@ -52,7 +53,7 @@ def replacement_attack(text, epsilon=0.1, max_attempts=50):
         attempt += 1
         if attempt > max_attempts:
             break
-        success, replaced_text = is_successful(text)
+        success, replaced_text = is_successful(text, device)
         if success:
             num += 1
             text = replaced_text
