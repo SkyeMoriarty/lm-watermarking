@@ -7,7 +7,6 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-
 dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
 
 epsilons = [0.1, 0.3, 0.5, 0.9]
@@ -25,7 +24,6 @@ fieldnames = [
     "original z score",
     "original prediction",
 
-    "attack type",
     "replaced watermarked completion",
     "replaced green fraction",
     "replaced z score",
@@ -54,18 +52,17 @@ def save_to_csv(output_dicts):
         writer.writerows(output_dicts)
 
 
-def get_single_output_dict(args, input, model, base_model, tokenizer, device, epsilon=0.1):
+def get_single_origin_output_dict(args, text, model, base_model, tokenizer, device):
     output_dict = {}
 
     if args.use_sampling:
         output_dict["sampling"] = "m-nom"
     else:
         output_dict["sampling"] = "8-beams"
-    output_dict["epsilon"] = epsilon
     output_dict["z threshold"] = args.detection_z_threshold
 
     # 截取prompt，得到有/无水印的生成文本
-    prompt, _, output_without_watermark, output_with_watermark, _ = generate(input, args, model=model,
+    prompt, _, output_without_watermark, output_with_watermark, _ = generate(text, args, model=model,
                                                                              device=device, tokenizer=tokenizer,
                                                                              base_model=base_model)
     output_dict["prompt"] = prompt
@@ -78,13 +75,18 @@ def get_single_output_dict(args, input, model, base_model, tokenizer, device, ep
     output_dict["original z score"] = original_result['z-score']
     output_dict["original prediction"] = original_result['Prediction']
 
+    return output_with_watermark, output_dict
+
+
+def get_single_attacked_output_dict(args, original, tokenizer, device, epsilon=0.1):
+    output_dict = {"epsilon": epsilon}
+
     # 攻击水印文本
     # 在同一个epsilon下使用三种攻击
     for i in range(3):
         attacker = attackers[i]
         attacker_name = attacker_names[i]
-        output_dict["attack type"] = attacker_name
-        attacked_output = attacker.attack(output_with_watermark, device)
+        attacked_output = attacker.attack(original, device, epsilon)
         attacked_result, _ = detect(attacked_output, args, device=device, tokenizer=tokenizer)
         attacked_result = dict(attacked_result)
         output_dict[attacker_name + " watermarked completion"] = attacked_output
@@ -107,9 +109,11 @@ def get_output_dicts(args):
     output_dicts = []
     for item in dataset:
         text = item["article"]
+        original, output_dict = get_single_origin_output_dict(args, text, model, base_model, tokenizer, device)
         for epsilon in epsilons:
-            output_dicts.append(get_single_output_dict(args, text, model, base_model,
-                                                       tokenizer, device, epsilon))
+            curr_output_dict = output_dict
+            curr_output_dict.update(get_single_attacked_output_dict(args, original, tokenizer, device, epsilon))
+            output_dicts.append(curr_output_dict)
 
     save_to_csv(output_dicts)
     return output_dicts
