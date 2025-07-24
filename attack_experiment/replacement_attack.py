@@ -39,7 +39,7 @@ fieldnames = [
     "deleted z score",
     "deleted prediction",
 ]
-output_path = "./attack_result.csv"
+output_path = "./baseline_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -111,7 +111,7 @@ def get_output_dicts(args):
         text = item["article"]
         original, output_dict = get_single_origin_output_dict(args, text, model, base_model, tokenizer, device)
         for epsilon in epsilons:
-            curr_output_dict = output_dict.copy() 
+            curr_output_dict = output_dict.copy()
             curr_output_dict.update(get_single_attacked_output_dict(args, original, tokenizer, device, epsilon))
             output_dicts.append(curr_output_dict)
 
