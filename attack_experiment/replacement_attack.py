@@ -86,6 +86,7 @@ def main(args, input=input_text, epsilon=0.1):
     output_dict["attacked z score"] = attacked_result['z-score']
     output_dict["attacked prediction"] = attacked_result['Prediction']
 
+    # 不断更新，最后统一写入
     save_to_json(output_dict)
 
     return output_dict

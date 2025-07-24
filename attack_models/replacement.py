@@ -12,7 +12,7 @@ model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-small")
 def get_masked_tokens(text):
     tokens = tokenizer.tokenize(text)
     i = random.randint(0, len(tokens) - 1)
-    orign = tokenizer.convert_tokens_to_string(tokens[i]).strip()
+    orign = tokenizer.convert_tokens_to_string([tokens[i]]).strip()
     masked = tokens[: i] + ['<extra_id_0>'] + ['<extra_id_1>'] + tokens[i+1:]
     return orign, masked, i
 
