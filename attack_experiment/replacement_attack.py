@@ -6,7 +6,8 @@ from attack_models.replacement import replacement_attack
 from datasets import load_dataset
 
 
-dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train[:3]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:5]")
+
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
 fieldnames = [
@@ -93,7 +94,7 @@ def get_output_dicts(args):
     output_dicts = {}
 
     for item in dataset:
-        text = item["text"]
+        text = item["article"]
         print("text: " + text)
         for epsilon in epsilons:
             output_dicts.update(get_single_output_dict(args, text, epsilon))
