@@ -29,6 +29,16 @@ input_text = (
 # dataset = load_dataset("c4", "en", split="train[:500]")
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
+fieldnames = [
+    "sampling",
+    "epsilon",
+
+    "original watermarked completion",
+    "original green fraction",
+    "original z score",
+    "original prediction"
+]
+
 
 def save_to_json(output):
     with open("./result.jsonl", "a") as f:
@@ -66,6 +76,7 @@ def main(args, input=input_text, epsilon=0.1):
 
     # 分别检测有/无受攻击的水印文本
     original_result, _ = detect(output_with_watermark, args, device=device, tokenizer=tokenizer)
+    original_result = dict(original_result)
     print("original watermarked completion: " + output_with_watermark)
     print("green fraction: " + original_result['Fraction of T in Greenlist'])
     print("z score: " + original_result['z-score'])
@@ -77,6 +88,7 @@ def main(args, input=input_text, epsilon=0.1):
     output_dict["original prediction"] = original_result['Prediction']
 
     attacked_result, _ = detect(attacked_output, args, device=device, tokenizer=tokenizer)
+    attacked_result = dict(attacked_result)
     print("attacked watermarked completion: " + attacked_output)
     print("green fraction: " + attacked_result['Fraction of T in Greenlist'])
     print("z score: " + attacked_result['z-score'])
