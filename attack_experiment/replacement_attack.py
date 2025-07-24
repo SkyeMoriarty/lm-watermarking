@@ -47,7 +47,7 @@ if not os.path.exists(output_path):
 
 
 def save_to_csv(output_dicts):
-    with open(output_path, mode='w', newline='', encoding='utf-8') as f:
+    with open(output_path, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writerows(output_dicts)
 
@@ -91,8 +91,8 @@ def get_single_attacked_output_dict(args, original, tokenizer, device, epsilon=0
         attacked_result = dict(attacked_result)
         output_dict[attacker_name + " watermarked completion"] = attacked_output
         output_dict[attacker_name + " green fraction"] = attacked_result['Fraction of T in Greenlist']
-        output_dict[attacker_name + "z score"] = attacked_result['z-score']
-        output_dict[attacker_name + "prediction"] = attacked_result['Prediction']
+        output_dict[attacker_name + " z score"] = attacked_result['z-score']
+        output_dict[attacker_name + " prediction"] = attacked_result['Prediction']
 
     return output_dict
 

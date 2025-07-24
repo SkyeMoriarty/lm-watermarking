@@ -2,7 +2,6 @@ datasets
 gradio
 nltk
 peft
-spacy
 scipy
 torch
 transformers
@@ -13,3 +12,4 @@ huggingface_hub
 sacremoses
 h5py
 requests
+spacy
