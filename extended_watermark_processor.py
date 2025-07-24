@@ -65,7 +65,7 @@ class WatermarkBase:
         """Initialize all internal settings of the seeding strategy from a colloquial, "public" name for the scheme."""
         self.prf_type, self.context_width, self.self_salt, self.hash_key = seeding_scheme_lookup(seeding_scheme)
 
-    # 为什么input_ids没有取[0]，默认是单条prompt？
+    # 为什么input_ids没有取[0]，默认是单条prompt
     def _seed_rng(self, input_ids: torch.LongTensor) -> None:
         """Seed RNG from local context. Not batched, because the generators we use (like cuda.random) are not batched."""
         # Need to have enough context for seed generation

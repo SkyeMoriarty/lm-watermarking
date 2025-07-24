@@ -5,28 +5,6 @@ from demo_watermark import parse_args, load_model, generate, detect
 from attack_models.replacement import replacement_attack
 from datasets import load_dataset
 
-input_text = (
-    "The diamondback terrapin or simply terrapin (Malaclemys terrapin) is a "
-    "species of turtle native to the brackish coastal tidal marshes of the "
-    "Northeastern and southern United States, and in Bermuda.[6] It belongs "
-    "to the monotypic genus Malaclemys. It has one of the largest ranges of "
-    "all turtles in North America, stretching as far south as the Florida Keys "
-    "and as far north as Cape Cod.[7] The name 'terrapin' is derived from the "
-    "Algonquian word torope.[8] It applies to Malaclemys terrapin in both "
-    "British English and American English. The name originally was used by "
-    "early European settlers in North America to describe these brackish-water "
-    "turtles that inhabited neither freshwater habitats nor the sea. It retains "
-    "this primary meaning in American English.[8] In British English, however, "
-    "other semi-aquatic turtle species, such as the red-eared slider, might "
-    "also be called terrapins. The common name refers to the diamond pattern "
-    "on top of its shell (carapace), but the overall pattern and coloration "
-    "vary greatly. The shell is usually wider at the back than in the front, "
-    "and from above it appears wedge-shaped. The shell coloring can vary "
-    "from brown to grey, and its body color can be grey, brown, yellow, "
-    "or white. All have a unique pattern of wiggly, black markings or spots "
-    "on their body and head. The diamondback terrapin has large webbed "
-    "feet.[9] The species is"
-)
 
 dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train[:3]")
 epsilons = [0.1, 0.3, 0.5, 0.9]
@@ -58,7 +36,7 @@ def save_to_csv(output_dicts):
         writer.writerows(output_dicts)
 
 
-def get_single_output_dict(args, input=input_text, epsilon=0.1):
+def get_single_output_dict(args, input, epsilon=0.1):
     args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
 
     # 加载模型、分词器、device
@@ -116,6 +94,7 @@ def get_output_dicts(args):
 
     for item in dataset:
         text = item["text"]
+        print("text: " + text)
         for epsilon in epsilons:
             output_dicts.update(get_single_output_dict(args, text, epsilon))
 
