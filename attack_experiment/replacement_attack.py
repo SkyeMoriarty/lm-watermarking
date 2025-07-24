@@ -37,7 +37,7 @@ def save_to_csv(output_dicts):
         writer.writerows(output_dicts)
 
 
-def get_single_output_dict(args, input, model, tokenizer, device, epsilon=0.1):
+def get_single_output_dict(args, input, model, base_model, tokenizer, device, epsilon=0.1):
     output_dict = {}
 
     if args.use_sampling:
@@ -49,7 +49,8 @@ def get_single_output_dict(args, input, model, tokenizer, device, epsilon=0.1):
 
     # 截取prompt，得到有/无水印的生成文本
     prompt, _, output_without_watermark, output_with_watermark, _ = generate(input, args, model=model,
-                                                                             device=device, tokenizer=tokenizer)
+                                                                             device=device, tokenizer=tokenizer,
+                                                                             base_model=base_model)
     output_dict["prompt"] = prompt
 
     # 攻击水印文本
@@ -78,16 +79,16 @@ def get_output_dicts(args):
 
     # 加载模型、分词器、device
     if not args.skip_model_load:
-        model, tokenizer, device, _ = load_model(args)
+        model, tokenizer, device, base_model = load_model(args)
     else:
-        model, tokenizer, device, _ = None, None, None, None
+        model, tokenizer, device, base_model = None, None, None, None
 
     output_dicts = []
 
     for item in dataset:
         text = item["article"]
         for epsilon in epsilons:
-            output_dicts.append(get_single_output_dict(args, text, model, tokenizer, device, epsilon))
+            output_dicts.append(get_single_output_dict(args, text, model, base_model, tokenizer, device, epsilon))
 
     save_to_csv(output_dicts)
     return output_dicts
