@@ -24,7 +24,7 @@ fieldnames = [
     "attacked z score",
     "attacked prediction",
 ]
-output_path = "./replacement_attack_result.csv"
+output_path = "./new_replacement_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
