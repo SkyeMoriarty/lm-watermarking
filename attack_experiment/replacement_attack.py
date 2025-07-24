@@ -9,7 +9,7 @@ from datasets import load_dataset
 
 dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
 
-epsilons = [0.1, 0.3, 0.5, 0.9]
+epsilons = [0.1, 0.3, 0.5, 0.7]
 attackers = [Replacement(), Insertion(), Deletion()]
 attacker_names = ["replaced", "inserted", "deleted"]
 
@@ -111,7 +111,7 @@ def get_output_dicts(args):
         text = item["article"]
         original, output_dict = get_single_origin_output_dict(args, text, model, base_model, tokenizer, device)
         for epsilon in epsilons:
-            curr_output_dict = output_dict
+            curr_output_dict = output_dict.copy() 
             curr_output_dict.update(get_single_attacked_output_dict(args, original, tokenizer, device, epsilon))
             output_dicts.append(curr_output_dict)
 
