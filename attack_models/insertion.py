@@ -14,11 +14,12 @@ def get_inserted_tokens(text):
     return inserted_tokens, i
 
 
-def insert(text):
+def insert(text, device):
     inserted_tokens, i = get_inserted_tokens(text)
     inserted_text = tokenizer.convert_tokens_to_string(inserted_tokens)
 
-    input_ids = tokenizer(inserted_text, return_tensors="pt").input_ids.to("cuda")
+    input_ids = tokenizer(inserted_text, return_tensors="pt").input_ids.to(device)
+    model.to(device)
     output = model.generate(
         input_ids,
         max_length=5,  # replacement的长度
@@ -33,14 +34,14 @@ def insert(text):
     return inserted
 
 
-def insertion_attack(text, epsilon=0.1):
+def insertion_attack(text, device, epsilon=0.1):
     tokens = tokenizer.tokenize(text)
     T = len(tokens)
     replacement_num = int(T * epsilon)
     num = 0
 
     while num < replacement_num:
-        text = insert(text)
+        text = insert(text, device)
         num += 1
 
     return text
