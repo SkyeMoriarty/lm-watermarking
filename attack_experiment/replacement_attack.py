@@ -7,7 +7,7 @@ from attack_models.insertion import insertion_attack
 from datasets import load_dataset
 
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:500]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
 
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
