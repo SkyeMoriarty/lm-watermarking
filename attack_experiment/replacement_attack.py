@@ -28,7 +28,7 @@ input_text = (
     "feet.[9] The species is"
 )
 
-dataset = load_dataset("c4", "en", split="train[:3]", trust_remote_code=True)
+dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train[:3]")
 epsilons = [0.1, 0.3, 0.5, 0.9]
 
 fieldnames = [
