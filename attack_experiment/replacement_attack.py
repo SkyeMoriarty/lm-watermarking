@@ -114,7 +114,8 @@ def add_baseline_lines(args):
             continue
         baseline_completion, output_dict = get_single_origin_output_dict(args, text, model,
                                                                              base_model, tokenizer, device)
-        output_dicts.append(output_dict*4)
+        for _ in range(4):
+            output_dicts.append(output_dict)
 
     for i in range(1, len(rows)):
         rows[i].append(output_dicts[i-1])
