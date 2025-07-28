@@ -123,6 +123,10 @@ def add_baseline_lines(args):
         for k in keys:
             rows[i].append(output_dicts[i - 1][k])
 
+    with open("./new_baseline_attack_result", "w", newline='', encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
 
 def get_single_attacked_output_dict(args, original, tokenizer, device, epsilon=0.1):
     output_dict = {"epsilon": epsilon}
