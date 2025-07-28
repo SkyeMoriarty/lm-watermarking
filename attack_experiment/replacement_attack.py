@@ -83,6 +83,7 @@ def get_single_origin_output_dict(args, text, model, base_model, tokenizer, devi
     # output_dict["original prediction"] = original_result['Prediction']
 
     baseline_result, _ = detect(baseline_completion, args, device=device, tokenizer=tokenizer)
+    baseline_result = dict(baseline_result)
     output_dict["baseline completion"] = baseline_completion
     output_dict["baseline green fraction"] = baseline_result['Fraction of T in Greenlist']
     output_dict["baseline z score"] = baseline_result['z-score']
