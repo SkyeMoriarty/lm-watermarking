@@ -105,7 +105,9 @@ def add_baseline_lines(args):
     with open(output_path, 'r', newline='') as infile:
         reader = csv.reader(infile)
         rows = list(reader)
-    rows[0].append(["baseline completion", "baseline green fraction", "baseline z score", "baseline prediction"])
+    for row in rows:
+        del row[-1]
+    rows[0].extend(["baseline completion", "baseline green fraction", "baseline z score", "baseline prediction"])
 
     output_dicts = []
     for item in dataset:
@@ -113,12 +115,12 @@ def add_baseline_lines(args):
         if len(text) < 5:
             continue
         baseline_completion, output_dict = get_single_origin_output_dict(args, text, model,
-                                                                             base_model, tokenizer, device)
+                                                                         base_model, tokenizer, device)
         for _ in range(4):
             output_dicts.append(output_dict)
 
     for i in range(1, len(rows)):
-        rows[i].append(output_dicts[i-1])
+        rows[i].append(output_dicts[i - 1])
 
     with open(output_path, 'w', newline='') as outfile:
         writer = csv.writer(outfile)
