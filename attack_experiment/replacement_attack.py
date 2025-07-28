@@ -44,7 +44,7 @@ fieldnames = [
     "baseline z score",
     "baseline prediction",
 ]
-output_path = "./improved_attack_result.csv"
+output_path = "./baseline_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -104,12 +104,10 @@ def add_baseline_lines(args):
 
     with open(output_path, 'r', newline='') as infile:
         reader = csv.reader(infile)
-        rows = list(reader)
+        rows = list(reader)[:201]
 
-    for row in rows:
-        del row[-1]
-        
-    rows[0].extend(["baseline completion", "baseline green fraction", "baseline z score", "baseline prediction"])
+    keys = ["baseline completion", "baseline green fraction", "baseline z score", "baseline prediction"]
+    rows[0].extend(keys)
 
     output_dicts = []
     for item in dataset:
@@ -122,11 +120,8 @@ def add_baseline_lines(args):
             output_dicts.append(output_dict)
 
     for i in range(1, len(rows)):
-        rows[i].append(output_dicts[i - 1])
-
-    with open(output_path, 'w', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(rows)
+        for k in keys:
+            rows[i].append(output_dicts[i - 1][k])
 
 
 def get_single_attacked_output_dict(args, original, tokenizer, device, epsilon=0.1):
