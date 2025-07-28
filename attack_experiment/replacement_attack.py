@@ -7,7 +7,7 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[1:500]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[1:50]")
 
 epsilons = [0.1, 0.3, 0.5, 0.7]
 attackers = [Replacement(), Insertion(), Deletion()]
@@ -109,6 +109,8 @@ def get_output_dicts(args):
     output_dicts = []
     for item in dataset:
         text = item["article"]
+        if len(text) < 5:
+            continue
         original, output_dict = get_single_origin_output_dict(args, text, model, base_model, tokenizer, device)
         for epsilon in epsilons:
             curr_output_dict = output_dict.copy()
