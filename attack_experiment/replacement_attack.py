@@ -105,8 +105,10 @@ def add_baseline_lines(args):
     with open(output_path, 'r', newline='') as infile:
         reader = csv.reader(infile)
         rows = list(reader)
+
     for row in rows:
         del row[-1]
+        
     rows[0].extend(["baseline completion", "baseline green fraction", "baseline z score", "baseline prediction"])
 
     output_dicts = []
