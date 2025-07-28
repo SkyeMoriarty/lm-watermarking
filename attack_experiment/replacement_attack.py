@@ -7,7 +7,7 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:50]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:500]")
 
 epsilons = [0.1, 0.3, 0.5, 0.7]
 attackers = [Replacement(), Insertion(), Deletion()]
@@ -104,7 +104,7 @@ def add_baseline_lines(args):
 
     with open(output_path, 'r', newline='') as infile:
         reader = csv.reader(infile)
-        rows = list(reader)[:201]
+        rows = list(reader)
 
     keys = ["baseline completion", "baseline green fraction", "baseline z score", "baseline prediction"]
     rows[0].extend(keys)
@@ -123,7 +123,7 @@ def add_baseline_lines(args):
         for k in keys:
             rows[i].append(output_dicts[i - 1][k])
 
-    with open("./new_baseline_attack_result", "w", newline='', encoding="utf-8") as f:
+    with open("./new_baseline_attack_result.csv", "w", newline='', encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerows(rows)
 
