@@ -36,7 +36,7 @@ arg_dict = {
     'n_beams': 1,  # 即不使用beam search
     'sampling_temp': 0.7,  # 控制采样多样性，越低确定性越强
     'use_gpu': True, 
-    'seeding_scheme': 'hybrid',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
+    'seeding_scheme': 'simple_1',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
     'gamma': 0.25, 
     'delta': 2.0, 
     'normalizers': '', 
@@ -63,6 +63,6 @@ args.__dict__.update(arg_dict)
 #
 # get_train_data(args)
 
-from attack_experiment.replacement_attack import get_output_dicts
+from attack_experiment.replacement_attack import get_output_dicts, add_baseline_lines
 
-get_output_dicts(args)
+add_baseline_lines(args)

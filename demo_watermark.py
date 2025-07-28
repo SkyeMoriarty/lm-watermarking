@@ -299,10 +299,29 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
     else:
         args.prompt_max_length = 2048 - args.max_new_tokens
 
-    tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True,
-                           max_length=args.prompt_max_length).to(device)
-    truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
-    redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)  ## ！！！次数删除了[0]批量处理
+    # Tokenize without truncation
+    tokens = tokenizer(prompt, return_tensors=None, add_special_tokens=True)["input_ids"]
+
+    # 判断是否需要截断
+    if len(tokens) > args.prompt_max_length:
+        truncated_tokens = tokens[:args.prompt_max_length]
+        completion_tokens = tokens[args.prompt_max_length:]
+
+        truncated_prompt = tokenizer.decode(truncated_tokens, skip_special_tokens=True)
+        baseline_completion = tokenizer.decode(completion_tokens, skip_special_tokens=True)
+        truncation_warning = True
+    else:
+        truncated_prompt = prompt
+        baseline_completion = ""
+        truncation_warning = False
+
+    # 再次转成 tensor 用于后续模型使用
+    tokd_input = tokenizer(truncated_prompt, return_tensors="pt", add_special_tokens=False).to(device)
+    #
+    # tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True,
+    #                        max_length=args.prompt_max_length).to(device)
+    # truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
+    redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)[0]
 
     torch.manual_seed(args.generation_seed)
     output_without_watermark = generate_without_watermark(**tokd_input)
@@ -329,6 +348,7 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
             int(truncation_warning),
             decoded_output_without_watermark,
             decoded_output_with_watermark,
+            baseline_completion,
             args)
 
 
