@@ -7,8 +7,8 @@ from attack_models.attack_interface import Attacker
 
 random.seed(42)
 
-tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")  # T5的预训练任务之一：span filling
-model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-small")
+tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-large")  # T5的预训练任务之一：span filling
+model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-large")
 
 
 # 【随机】选择一个词用<extra_id_0> and <extra_id_1>包围——可复现！

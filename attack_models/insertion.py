@@ -6,8 +6,8 @@ from attack_models.attack_interface import Attacker
 
 random.seed(42)
 
-tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-small")
-model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-small")
+tokenizer = AutoTokenizer.from_pretrained("google-t5/t5-large")
+model = T5ForConditionalGeneration.from_pretrained("google-t5/t5-large")
 
 
 def get_inserted_tokens(text):
