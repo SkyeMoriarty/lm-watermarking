@@ -65,4 +65,4 @@ args.__dict__.update(arg_dict)
 
 from attack_experiment.replacement_attack import get_output_dicts, add_baseline_lines
 
-add_baseline_lines(args)
+get_output_dicts(args)
