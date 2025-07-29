@@ -72,7 +72,7 @@ class Replacement(Attacker, ABC):
                 tokens = replaced_tokens
 
         text = tokenizer.decode(tokenizer.convert_tokens_to_ids(tokens), skip_special_tokens=True)
-        print("replaced text: ", text)
+        print(f"When epsilon={epsilon}, replaced text: ", text)
 
         return text
 

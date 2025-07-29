@@ -7,7 +7,7 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:50]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:1]")
 
 epsilons = [0.1, 0.3, 0.5, 0.7]
 attackers = [Replacement(), Insertion(), Deletion()]
@@ -89,6 +89,8 @@ def get_single_origin_output_dict(args, text, model, base_model, tokenizer, devi
     output_dict["baseline z score"] = baseline_result['z-score']
     output_dict["baseline prediction"] = baseline_result['Prediction']
 
+    print("baseline completion: " + baseline_completion)
+    print("original completion: " + output_with_watermark)
     return output_with_watermark, output_dict
 
 

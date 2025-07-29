@@ -214,7 +214,6 @@ def load_model(args):
         else:
             raise ValueError(f"Unknown model type: {args.base_model_path}")
         model = PeftModel.from_pretrained(base_model, args.model_name_or_path)
-        tokenizer = AutoTokenizer.from_pretrained(args.base_model_path)
     else:
         if args.is_seq2seq_model:
             model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name_or_path)
@@ -228,7 +227,9 @@ def load_model(args):
                 model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path, device_map='auto')
         else:
             raise ValueError(f"Unknown model type: {args.model_name_or_path}")
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
+
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=False)
+    tokenizer.pad_token = tokenizer.eos_token
 
     if args.use_gpu:
         device = "cuda" if torch.cuda.is_available() else "cpu"

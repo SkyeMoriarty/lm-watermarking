@@ -2,7 +2,7 @@ from datasets import load_dataset, Dataset
 
 from demo_watermark import load_model
 from peft import get_peft_model, PrefixTuningConfig, TaskType
-from transformers import Trainer, TrainingArguments
+from transformers import Trainer, TrainingArguments, default_data_collator
 
 
 def load_training_data(path='./p_tuning_data.jsonl'):
@@ -11,7 +11,7 @@ def load_training_data(path='./p_tuning_data.jsonl'):
 
 
 def tokenize_fn(single, tokenizer):
-    full_input = single['input'] + ' ' + single['target']
+    full_input = single['input'].strip() + ' ' + single['target'].strip()
     tokenized = tokenizer(full_input,
                           padding="max_length",
                           truncation=True,
@@ -20,19 +20,19 @@ def tokenize_fn(single, tokenizer):
 
     if isinstance(tokenized['attention_mask'][0], list):  # 如果是嵌套列表
         tokenized['attention_mask'] = tokenized['attention_mask'][0]  # 取第一个元素
-    tokenized["labels"] = tokenized["input_ids"].copy()
+
+    tokenized["labels"] = [
+        (id if mask == 1 else -100)
+        for id, mask in zip(tokenized["input_ids"], tokenized["attention_mask"])
+    ]
     return tokenized
 
 
 def load_configured_model(args):
-    args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
-    print(args)
-    print()
-
     if not args.skip_model_load:
         model, tokenizer, device, _ = load_model(args)
     else:
-        model, tokenizer, device, _ = None, None, None
+        model, tokenizer, device, _ = None, None, None, None
 
     if not args.skip_model_load:
         peft_config = PrefixTuningConfig(
@@ -47,7 +47,7 @@ def load_configured_model(args):
     return tokenizer, model
 
 
-def train(model, tokenized_dataset):
+def train(model, tokenized_dataset, tokenizer):
     print("Start finetuning...")
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
@@ -66,6 +66,8 @@ def train(model, tokenized_dataset):
         model=model,
         args=training_args,
         train_dataset=tokenized_dataset,
+        tokenizer=tokenizer,
+        data_collator=default_data_collator,
     )
 
     trainer.train()
@@ -75,9 +77,9 @@ def train(model, tokenized_dataset):
 def get_ptuned_opt(args):
     dataset = load_training_data()
     tokenizer, model = load_configured_model(args)
-    tokenized_dataset = dataset['train'].map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])  # 移除原始列名
+    tokenized_dataset = dataset['train'].map(lambda x: tokenize_fn(x, tokenizer), remove_columns=["input", "target"])
 
-    train(model, tokenized_dataset)
+    train(model, tokenized_dataset, tokenizer)
 
     # 保存 Prefix 参数
     model.save_pretrained("./ptuned_opt")

@@ -54,5 +54,5 @@ class Insertion(Attacker, ABC):
             text = insert(text, device)
             num += 1
 
-        print("inserted text: " + text)
+        print(f"When epsilon={epsilon}, inserted text: " + text)
         return text
