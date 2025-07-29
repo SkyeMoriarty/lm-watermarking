@@ -41,10 +41,10 @@ class Insertion(Attacker, ABC):
     def attack(self, text, device, epsilon=0.1):
         tokens = tokenizer.tokenize(text)
         T = len(tokens)
-        replacement_num = int(T * epsilon)
+        insertion_num = int(T * epsilon)
         num = 0
 
-        while num < replacement_num:
+        while num < insertion_num:
             text = insert(text, device)
             num += 1
 
