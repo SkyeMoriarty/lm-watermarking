@@ -7,7 +7,7 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[2:100]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[2:50]")
 
 epsilons = [0.1, 0.3, 0.5, 0.7]
 attackers = [Replacement(), Insertion(), Deletion()]
