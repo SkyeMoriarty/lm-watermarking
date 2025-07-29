@@ -59,10 +59,10 @@ args.__dict__.update(arg_dict)
 #
 # main(args)
 
-from p_tuning.training_data import get_train_data
-
-get_train_data(args)
-
-# from attack_experiment.replacement_attack import get_output_dicts
+# from p_tuning.training_data import get_train_data
 #
-# get_output_dicts(args)
+# get_train_data(args)
+
+from attack_experiment.replacement_attack import get_output_dicts
+
+get_output_dicts(args)
