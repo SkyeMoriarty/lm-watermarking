@@ -31,6 +31,7 @@ def insert(text, device):
         max_length=5,
         num_beams=1,
         num_return_sequences=1,  # 控制生成条数，而不是token个数
+        do_sample=True,
         early_stopping=True
     )
 
