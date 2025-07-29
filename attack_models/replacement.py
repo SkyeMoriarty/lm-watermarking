@@ -21,7 +21,7 @@ def get_masked_tokens(tokens, i):
 
 # 用T5模型得到k=20个candidate替换词
 # 根据和原词是否一致判断攻击是否成功
-def is_successful(tokens, device, i, k=20, num_beams=50):
+def is_successful(tokens, device, i, k=20):
     origin, masked = get_masked_tokens(tokens, i)
     masked_text = tokenizer.decode(tokenizer.convert_tokens_to_ids(masked), skip_special_tokens=True)
 
@@ -29,10 +29,14 @@ def is_successful(tokens, device, i, k=20, num_beams=50):
     model.to(device)
     outputs = model.generate(
         input_ids,
-        max_length=3,  # replacement的长度
-        num_beams=num_beams,
+        max_length=5,  # replacement的长度
+        num_beams=1,
         num_return_sequences=k,  # replacement的个数
-        early_stopping=True
+        do_sample=True,
+        top_k=50,
+        top_p=0.95,
+        temperature=1.0,
+        early_stopping=True,
     )
 
     decoded = [tokenizer.decode(out, skip_special_tokens=True) for out in outputs]
