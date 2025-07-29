@@ -52,7 +52,7 @@ def train(model, tokenized_dataset, tokenizer):
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
         per_device_train_batch_size=4,
-        num_train_epochs=3,
+        num_train_epochs=1,
         learning_rate=5e-5,
         # 和logging相关的参数
         save_total_limit=1,

@@ -7,8 +7,7 @@
     format
 """
 
-from demo_watermark import parse_args, load_model
-from watermark import generate
+from demo_watermark import parse_args, load_model, generate
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 
@@ -17,7 +16,7 @@ import json
 
 def load_data():
     dataset = load_dataset("ag_news", split="train")
-    subset = dataset.select(range(2000))
+    subset = dataset.select(range(200))
     return subset
 
 
@@ -35,11 +34,6 @@ def save_to_json(inputs, targets):
 
 
 def get_train_data(args):
-    # Initial arg processing and log
-    args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
-    print(args)
-    print()
-
     if not args.skip_model_load:
         model, tokenizer, device, _ = load_model(args)
     else:
@@ -50,18 +44,15 @@ def get_train_data(args):
     if not args.skip_model_load:
         dataset = load_data()
         dataloader = get_dataloader(dataset)
-        for prompts in dataloader:  # 遍历batch
-            redecoded_input, _, decoded_output_with_watermark, _ = generate(prompts, args, model=model,
-                                                                            device=device, tokenizer=tokenizer)
-            for input_str, target_str in zip(redecoded_input, decoded_output_with_watermark):
-                inputs.append(input_str)
-                targets.append(target_str)
+        for prompt in dataloader:
+            redecoded_input, _, _, decoded_output_with_watermark, _, _ = generate(prompt, args, model=model,
+                                                                                  device=device, tokenizer=tokenizer)
+            inputs.append(redecoded_input)
+            targets.append(decoded_output_with_watermark)
             print()
-            print("Input: ")
-            print(redecoded_input)
+            print("Input: " + redecoded_input)
             print()
-            print("Target: ")
-            print(decoded_output_with_watermark)
+            print("Target: " + decoded_output_with_watermark)
 
     save_to_json(inputs, targets)
 
