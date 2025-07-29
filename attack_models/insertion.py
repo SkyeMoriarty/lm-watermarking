@@ -39,7 +39,7 @@ def insert(text, device):
     # generated = generated.split("<extra_id_")[0].strip()
     inserted_tokens = inserted_tokens[: i] + tokenizer.tokenize(generated) + inserted_tokens[i + 2:]
     inserted = tokenizer.decode(tokenizer.convert_tokens_to_ids(inserted_tokens), skip_special_tokens=True)
-    print(f"Inserted at {i}: \"{generated}\"")
+    # print(f"Inserted at {i}: \"{generated}\"")
     return inserted
 
 
@@ -54,4 +54,5 @@ class Insertion(Attacker, ABC):
             text = insert(text, device)
             num += 1
 
+        print("inserted text: " + text)
         return text

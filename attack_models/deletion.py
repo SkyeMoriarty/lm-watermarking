@@ -28,4 +28,5 @@ class Deletion(Attacker):
 
         # token_ids = tokenizer(new_text, return_tensors="pt").input_ids
         # return tokenizer.decode(token_ids[0], skip_special_tokens=True)
+        print("deleted: " + new_text)
         return new_text

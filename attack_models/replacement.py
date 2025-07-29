@@ -43,7 +43,7 @@ def is_successful(tokens, device, i, k=20):
     for candidate in decoded:
         if candidate.strip().lower() != origin.strip().lower():
             replaced_tokens = masked[: i] + tokenizer.tokenize(candidate) + masked[i+2:]
-            print(f"Replaced token {i}: '{origin}' → '{candidate}'")
+            # print(f"Replaced token {i}: '{origin}' → '{candidate}'")
             return True, replaced_tokens
     return False, None
 
@@ -72,6 +72,7 @@ class Replacement(Attacker, ABC):
                 tokens = replaced_tokens
 
         text = tokenizer.decode(tokenizer.convert_tokens_to_ids(tokens), skip_special_tokens=True)
+        print("replaced text: ", text)
 
         return text
 
