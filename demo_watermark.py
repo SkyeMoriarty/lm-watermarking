@@ -306,7 +306,7 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
     # 判断是否需要截断
     if len(tokens) > args.prompt_max_length:
         truncated_tokens = tokens[:args.prompt_max_length]
-        completion_tokens = tokens[args.prompt_max_length: args.prompt_max_length+200]
+        completion_tokens = tokens[args.prompt_max_length: args.prompt_max_length + 200]
 
         truncated_prompt = tokenizer.decode(truncated_tokens, skip_special_tokens=True)
         baseline_completion = tokenizer.decode(completion_tokens, skip_special_tokens=True)
@@ -823,12 +823,13 @@ def main(args):
         print("Prompt:")
         print(input_text)
 
-        _, _, decoded_output_without_watermark, decoded_output_with_watermark, _ = generate(input_text,
-                                                                                            args,
-                                                                                            model=model,
-                                                                                            device=device,
-                                                                                            tokenizer=tokenizer,
-                                                                                            base_model=base_model)
+        _, _, decoded_output_without_watermark, decoded_output_with_watermark, baseline_completion, _ = generate(
+            input_text,
+            args,
+            model=model,
+            device=device,
+            tokenizer=tokenizer,
+            base_model=base_model)
         without_watermark_detection_result = detect(decoded_output_without_watermark,
                                                     args,
                                                     device=device,
