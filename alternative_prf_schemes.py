@@ -126,7 +126,7 @@ def anchored_minhash_prf(input_ids: torch.LongTensor, context_width: int, salt_k
 
 
 def global_prf(input_ids: torch.LongTensor) -> int:
-    return input_ids.min().item()
+    return input_ids.sum().item()
 
 
 def position_prf(input_ids: torch.LongTensor) -> int:
@@ -136,7 +136,7 @@ def position_prf(input_ids: torch.LongTensor) -> int:
 # 可以作为stable context
 def anchored_prf(input_ids: torch.LongTensor, anchors=(0, -1, 'middle')) -> int:
     seq_len = len(input_ids)
-    anchor_vals = []
+    anchor_indices = []
 
     for pos in anchors:
         if pos == 'middle':
@@ -145,8 +145,10 @@ def anchored_prf(input_ids: torch.LongTensor, anchors=(0, -1, 'middle')) -> int:
             index = pos % seq_len
         else:
             continue
-        anchor_vals.append(input_ids[index].item())
-    return sum(anchor_vals)
+        anchor_indices.append(index)
+    anchors = torch.tensor([input_ids[i] for i in anchor_indices], device=input_ids.device)
+    anchor_val = anchors.sum().item()
+    return anchor_val
 
 
 # 可以加一个enable_modules列表控制是否要使用以下三种信息
@@ -155,6 +157,7 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
                                enabled_modules: list[str],
                                salt_key: int) -> int:
 
+    # 第一次扰动
     if 'anchor' in enabled_modules:
         anchor_val = anchored_prf(input_ids[-context_width:])
     else:
@@ -168,9 +171,10 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
     else:
         position_val = None
 
+    # 第二次扰动
     values = [v for v in [anchor_val, global_val, position_val] if v is not None]
-    x = min(values)
-    return salt_key * hashint(torch.tensor([x], dtype=torch.long)).item()
+    x = salt_key*hashint(torch.tensor([sum(values)], device=input_ids.device)).item()
+    return x
 
 
 def minskipgram_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int, k: int = 2) -> int:

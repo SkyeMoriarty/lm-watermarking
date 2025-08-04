@@ -41,7 +41,7 @@ arg_dict = {
     'delta': 2.0,
     'context_width': 4,
     'normalizers': '',
-    'enabled_modules': ['global', 'position'],
+    'enabled_modules': ['global'],
     'ignore_repeated_ngrams': False,  # 是否避免重复bigram
     'detection_z_threshold': 4.0,
     'select_green_tokens': True,
