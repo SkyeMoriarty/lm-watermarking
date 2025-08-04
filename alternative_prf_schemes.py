@@ -49,11 +49,6 @@ def seeding_scheme_lookup(seeding_scheme: str):
         context_width = 4
         self_salt = True
         hash_key = 15485863
-    elif seeding_scheme == "selfhash_batch":
-        prf_type = "anchored_minhash_prf_batch"
-        context_width = 4
-        self_salt = True
-        hash_key = 15485863
     elif seeding_scheme == "minhash":
         prf_type = "minhash_prf"
         context_width = 4
@@ -66,11 +61,6 @@ def seeding_scheme_lookup(seeding_scheme: str):
         hash_key = 15485863
     elif seeding_scheme == "hybrid":
         prf_type = "multi_anchored_minhash_prf"
-        context_width = 4
-        self_salt = True
-        hash_key = 15485863
-    elif seeding_scheme == "hybrid_batch":
-        prf_type = "multi_anchored_minhash_prf_batch"
         context_width = 4
         self_salt = True
         hash_key = 15485863
@@ -88,146 +78,113 @@ def seeding_scheme_lookup(seeding_scheme: str):
         raise ValueError(f"Invalid seeding scheme name {seeding_scheme} given. Try  'simple_1'?")
 
     assert prf_type in prf_lookup.keys()
-    return prf_type, context_width, self_salt, hash_key
+    return prf_type, self_salt, hash_key
 
 
-def multiplicative_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
+def multiplicative_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
     return salt_key * input_ids.prod().item()
 
 
-def additive_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
+def additive_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
     return salt_key * input_ids.sum().item()
 
 
-def additive_prf_batch(input_ids: torch.LongTensor, salt_key: int) -> torch.LongTensor:
-    return salt_key * input_ids.sum(dim=-1)
-
-
-def minfunc_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
+def minfunc_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
     # not a great idea for non-random input ids as in text
     return salt_key * input_ids.min().item()
 
 
 # hashint函数：将任意整数输入 → 映射为难以预测的、稳定且分布均匀的大整数输出，且保证相近输入不会得到相近输出
 # 取context中确定step的若干个
-def simple_skip_prf(input_ids: torch.LongTensor, salt_key: int, k=2) -> int:
+def simple_skip_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int, k=2) -> int:
     # k is the skip distance
     return hashint(salt_key * input_ids[::k]).prod().item()
 
 
 # 只取context中的第一个
-def skipgram_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
+def skipgram_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
     # maximum distance skipgram within context
     return hashint(salt_key * input_ids[0]).item()
 
 
 # 取句首+anchor位置的两个token id，分别乘以salt_key，再分别哈希，再相乘（salt_key 是分别作用于每个 token 的 hash 输入）
 # 对比anchored_minhash_prf，盐值直接影响哈希结果，随机性&安全性更高
-def anchored_skipgram_prf(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> int:
+def anchored_skipgram_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int, anchor: int = -1) -> int:
     # maximum distance skipgram within context
     return (hashint(salt_key * input_ids[0]) * hashint(salt_key * input_ids[anchor])).item()
 
 
-def minhash_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
+def minhash_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
     # slightly less not the greatest idea for non-random input ids as in text
     return hashint(salt_key * input_ids).min().item()
 
 
 # 对整段+anchor位置的两个token id，分别哈希，再相乘，再乘以salt_key（salt_key 是最后乘在整个 hash 组合之后的结果上）
-def anchored_minhash_prf(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> int:
+def anchored_minhash_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int, anchor: int = -1) -> int:
     # Anchor to one key to produce a min over pairs again
     return (salt_key * hashint(input_ids) * hashint(input_ids[anchor])).min().item()
 
 
-def anchored_minhash_prf_batch(input_ids: torch.LongTensor, salt_key: int, anchor: int = -1) -> torch.LongTensor:
-    # 1. 计算hashint(input_ids) [batch_size, context_width]
-    hashed_ids = hashint(input_ids)
-
-    # 2. 计算hashint(anchor tokens) [batch_size]
-    # 假设anchor是固定位置，如每个样本的第0个token
-    anchor_ids = input_ids[:, anchor]  # [batch_size]
-    hashed_anchors = hashint(anchor_ids)  # [batch_size]
-
-    # 3. 批量计算 [batch_size, context_width]
-    salted = salt_key * hashed_ids * hashed_anchors.unsqueeze(1)  # 广播
-
-    # 4. 对每个样本取最小值 [batch_size]
-    return salted.min(dim=1).values
+def global_prf(input_ids: torch.LongTensor) -> int:
+    return input_ids.min().item()
 
 
-# 在前一个方法的基础上增加了多个anchor、又加入了context和position信息，兼具局部鲁棒性&全文参与
-def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
-                               salt_key: int,
-                               anchors=(0, -1, 'middle', 'random')) -> int:
+def position_prf(input_ids: torch.LongTensor) -> int:
+    return (input_ids * torch.arange(1, len(input_ids) + 1, device=input_ids.device)).sum().item()
+
+
+# 可以作为stable context
+def anchored_prf(input_ids: torch.LongTensor, anchors=(0, -1, 'middle')) -> int:
     seq_len = len(input_ids)
     anchor_vals = []
 
-    global_val = additive_prf(input_ids, salt_key)
-    position_val = position_prf(input_ids, salt_key)
-
     for pos in anchors:
         if pos == 'middle':
             index = seq_len // 2
-        elif pos == 'random':  # 注意确保可复现！
-            index = (salt_key * 17) % seq_len
         elif isinstance(pos, int):  # 防止越界
             index = pos % seq_len
         else:
             continue
-        anchor_vals.append(hashint(salt_key * input_ids[index]).item())  # .item()将tensor张量转为Python标量，且只能用于只包含一个元素的张量
-    return min(anchor_vals + [global_val] + [position_val])
+        anchor_vals.append(input_ids[index].item())
+    return sum(anchor_vals)
 
 
-def multi_anchored_minhash_prf_batch(input_ids: torch.LongTensor,
-                                     salt_key: int,
-                                     anchors=(0, -1, 'middle', 'random')) -> torch.LongTensor:
-    seq_len = input_ids.shape[-1]
+# 可以加一个enable_modules列表控制是否要使用以下三种信息
+def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
+                               context_width: int,
+                               enabled_modules: list[str],
+                               salt_key: int) -> int:
 
-    global_val = additive_prf_batch(input_ids, salt_key)
-    position_val = position_prf_batch(input_ids, salt_key)
+    if 'anchor' in enabled_modules:
+        anchor_val = anchored_prf(input_ids[-context_width:])
+    else:
+        anchor_val = []
+    if 'global' in enabled_modules:
+        global_val = global_prf(input_ids[-context_width:])
+    else:
+        global_val = []
+    if 'position' in enabled_modules:
+        position_val = position_prf(input_ids[-context_width:])
+    else:
+        position_val = []
 
-    anchor_vals = []
-
-    for pos in anchors:
-        if pos == 'middle':
-            index = seq_len // 2
-        elif pos == 'random':  # 注意确保可复现！
-            index = (salt_key * 17) % seq_len
-        elif isinstance(pos, int):  # 防止越界
-            index = pos % seq_len
-        else:
-            continue
-        anchor_vals.append(hashint(salt_key * input_ids[:, index]).to(input_ids.device))
-
-    all_vals = anchor_vals + [global_val, position_val]  # list of (batch_size,) tensors
-    stacked = torch.stack(all_vals, dim=0)  # shape: (num_sources, batch_size)
-    minhash = stacked.min(dim=0).values  # shape: (batch_size,)
-    return minhash
+    x = min([anchor_val, global_val, position_val])
+    return salt_key * hashint(torch.tensor([x], dtype=torch.long)).item()
 
 
-def minskipgram_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
+def minskipgram_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int, k: int = 2) -> int:
     # min over all skipgrams in context, k=2 is all pairs
     skipgrams = torch.as_tensor(list(combinations(hashint(salt_key * input_ids), 2)))
     return skipgrams.prod(dim=1).min().item()
 
 
 # 非交换哈希链式累乘，不可逆
-def noncomm_prf(input_ids: torch.LongTensor, salt_key: int, k: int = 2) -> int:
+def noncomm_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int, k: int = 2) -> int:
     key = torch.as_tensor(salt_key, dtype=torch.long)
     for entry in input_ids:
         key *= hashint(key * entry)
         key %= 2 ** 32
     return key.item()
-
-
-# 位置加权哈希和：第一个token*1，第二个token*2，...
-# 线性结构，为随机性较弱
-def position_prf(input_ids: torch.LongTensor, salt_key: int) -> int:
-    return (salt_key * input_ids * torch.arange(1, len(input_ids) + 1, device=input_ids.device)).sum().item()
-
-
-def position_prf_batch(input_ids: torch.LongTensor, salt_key: int) -> torch.LongTensor:
-    return (salt_key * input_ids * torch.arange(1, input_ids.shape[-1] + 1, device=input_ids.device)).sum(dim=-1)
 
 
 prf_lookup = {
@@ -239,12 +196,10 @@ prf_lookup = {
     "anchored_skipgram_prf": anchored_skipgram_prf,
     "minhash_prf": minhash_prf,
     "anchored_minhash_prf": anchored_minhash_prf,
-    "anchored_minhash_prf_batch": anchored_minhash_prf_batch,
     "minskipgram_prf": minskipgram_prf,
     "noncomm_prf": noncomm_prf,
     "position_prf": position_prf,
     "multi_anchored_minhash_prf": multi_anchored_minhash_prf,
-    "multi_anchored_minhash_prf_batch": multi_anchored_minhash_prf_batch
 }
 
 # Generate a global permute table once at startup
@@ -256,8 +211,8 @@ fixed_table = torch.randperm(1_000_003, device=torch.device("cpu"), generator=rn
 
 def hashint(integer_tensor: torch.LongTensor) -> torch.LongTensor:
     """Sane version, in the end we only need a small permutation table."""
-    return fixed_table[
-               integer_tensor.cpu() % table_size] + 1  # minor cheat here, this function always return CPU values
+    return fixed_table[integer_tensor.cpu() % table_size] + 1  # minor cheat here, this function always return CPU
+    # values
 
 
 def _hashint_avalanche_tensor(integer_tensor: torch.LongTensor):

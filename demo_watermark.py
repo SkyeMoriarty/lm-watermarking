@@ -258,7 +258,9 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
                                                    gamma=args.gamma,
                                                    delta=args.delta,
                                                    seeding_scheme=args.seeding_scheme,
-                                                   select_green_tokens=args.select_green_tokens)
+                                                   select_green_tokens=args.select_green_tokens,
+                                                   context_width=args.context_width,
+                                                   enabled_modules=args.enabled_modules)
 
     # 存储和模型相关的参数字典，统一传给模型
     gen_kwargs = dict(max_new_tokens=args.max_new_tokens)

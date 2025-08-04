@@ -38,10 +38,12 @@ arg_dict = {
     'use_gpu': True, 
     'seeding_scheme': 'hybrid',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
     'gamma': 0.25, 
-    'delta': 2.0, 
-    'normalizers': '', 
+    'delta': 2.0,
+    'window_width': 4,
+    'normalizers': '',
+    'enabled_modules': ['global'],
     'ignore_repeated_ngrams': False,  # 是否避免重复bigram
-    'detection_z_threshold': 4.0,  # ！！！！！！！！！！！！
+    'detection_z_threshold': 4.0,
     'select_green_tokens': True,
     'skip_model_load': False,
     'seed_separately': True,
@@ -63,6 +65,6 @@ args.__dict__.update(arg_dict)
 #
 # get_train_data(args)
 
-from attack_experiment.replacement_attack import get_output_dicts
+from attack_experiment.under_attack import get_output_dicts
 
 get_output_dicts(args)

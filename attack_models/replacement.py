@@ -49,7 +49,7 @@ def is_successful(tokens, device, i, k=20):
 
 
 class Replacement(Attacker, ABC):
-    def attack(self, text, device, epsilon, max_attempts=100):
+    def attack(self, text, device, epsilon, max_attempts=200):
         # 确保和替换词时的分词粒度一致
         tokens = tokenizer.convert_ids_to_tokens(tokenizer(text).input_ids[1:-1])
         T = len(tokens)

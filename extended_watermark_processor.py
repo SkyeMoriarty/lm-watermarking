@@ -37,6 +37,8 @@ class WatermarkBase:
             delta: float = 2.0,
             seeding_scheme: str = "selfhash",  # simple default, find more schemes in alternative_prf_schemes.py
             select_green_tokens: bool = True,  # should always be the default if not running in legacy mode
+            context_width: int = 4,
+            enabled_modules: list[str] = None
     ):
         # patch now that None could now maybe be passed as seeding_scheme
         if seeding_scheme is None:
@@ -49,6 +51,8 @@ class WatermarkBase:
         # Watermark behavior:
         self.gamma = gamma
         self.delta = delta
+        self.context_width = context_width
+        self.enabled_modules = enabled_modules
         self.rng = None
         self._initialize_seeding_scheme(seeding_scheme)
         # Legacy behavior:
@@ -63,7 +67,7 @@ class WatermarkBase:
     # 2. rng：伪随机数生成器，通过prf_key初始化，用于决定green_list的划分
     def _initialize_seeding_scheme(self, seeding_scheme: str) -> None:
         """Initialize all internal settings of the seeding strategy from a colloquial, "public" name for the scheme."""
-        self.prf_type, self.context_width, self.self_salt, self.hash_key = seeding_scheme_lookup(seeding_scheme)
+        self.prf_type, self.self_salt, self.hash_key = seeding_scheme_lookup(seeding_scheme)
 
     # 为什么input_ids没有取[0]，默认是单条prompt
     def _seed_rng(self, input_ids: torch.LongTensor) -> None:
@@ -74,7 +78,7 @@ class WatermarkBase:
 
         # 根据seeding_scheme设置好对应的prf名称，在这里通过prf_lookup字典根据名称键取对应的prf函数
         # 输入input(指定窗口大小)和hash key，得到一个可复现的哈希值
-        prf_key = prf_lookup[self.prf_type](input_ids[-self.context_width:], salt_key=self.hash_key)
+        prf_key = prf_lookup[self.prf_type](input_ids, self.context_width, self.enabled_modules, salt_key=self.hash_key)
         # enable for long, interesting streams of pseudorandom numbers: print(prf_key)
         self.rng.manual_seed(prf_key % (2 ** 64 - 1))  # safeguard against overflow from long 防止溢出
 
