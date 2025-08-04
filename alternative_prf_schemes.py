@@ -158,15 +158,15 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
     if 'anchor' in enabled_modules:
         anchor_val = anchored_prf(input_ids[-context_width:])
     else:
-        anchor_val = []
+        anchor_val = None
     if 'global' in enabled_modules:
         global_val = global_prf(input_ids[-context_width:])
     else:
-        global_val = []
+        global_val = None
     if 'position' in enabled_modules:
         position_val = position_prf(input_ids[-context_width:])
     else:
-        position_val = []
+        position_val = None
 
     x = min([anchor_val, global_val, position_val])
     return salt_key * hashint(torch.tensor([x], dtype=torch.long)).item()
