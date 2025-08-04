@@ -54,7 +54,7 @@ if not os.path.exists(output_path):
 def save_to_csv(output_dicts):
     with open(output_path, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writerows(output_dicts)
+        writer.writerow(output_dicts)
 
 
 def get_single_origin_output_dict(args, text, model, base_model, tokenizer, device):
