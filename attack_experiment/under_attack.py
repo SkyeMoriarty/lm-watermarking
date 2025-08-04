@@ -32,7 +32,7 @@ fieldnames = [
     "inserted watermarked completion",
     "inserted green fraction",
     "inserted z score",
-    "inserted prediction",
+    # "inserted prediction",
 
     "deleted watermarked completion",
     "deleted green fraction",
@@ -44,7 +44,7 @@ fieldnames = [
     "baseline z score",
     # "baseline prediction",
 ]
-output_path = "./global_only_attack_result.csv"
+output_path = "./g+p_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
