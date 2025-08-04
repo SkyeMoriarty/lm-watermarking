@@ -168,7 +168,8 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
     else:
         position_val = None
 
-    x = min([anchor_val, global_val, position_val])
+    values = [v for v in [anchor_val, global_val, position_val] if v is not None]
+    x = min(values)
     return salt_key * hashint(torch.tensor([x], dtype=torch.long)).item()
 
 
