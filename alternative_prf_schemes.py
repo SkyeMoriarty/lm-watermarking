@@ -85,7 +85,7 @@ def multiplicative_prf(input_ids: torch.LongTensor, context_width: int, salt_key
     return salt_key * input_ids.prod().item()
 
 
-def additive_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
+def additive_prf(input_ids: torch.LongTensor, context_width: int, enabled_modules, salt_key: int) -> int:
     return salt_key * input_ids.sum().item()
 
 
