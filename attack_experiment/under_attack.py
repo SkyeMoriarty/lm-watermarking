@@ -160,13 +160,14 @@ def get_output_dicts(args):
     output_dicts = []
     for item in dataset:
         text = item["article"]
-        if len(text) < 5:
+        if len(text) < 20:
             continue
         original, output_dict = get_single_origin_output_dict(args, text, model, base_model, tokenizer, device)
         for epsilon in epsilons:
             curr_output_dict = output_dict.copy()
             curr_output_dict.update(get_single_attacked_output_dict(args, original, tokenizer, device, epsilon))
-            output_dicts.append(curr_output_dict)
+            # output_dicts.append(curr_output_dict)
+            save_to_csv(curr_output_dict)
 
-    save_to_csv(output_dicts)
+    # save_to_csv(output_dicts)
     return output_dicts
