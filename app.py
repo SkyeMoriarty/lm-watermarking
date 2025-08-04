@@ -39,7 +39,7 @@ arg_dict = {
     'seeding_scheme': 'hybrid',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
     'gamma': 0.25, 
     'delta': 2.0,
-    'window_width': 4,
+    'context_width': 4,
     'normalizers': '',
     'enabled_modules': ['global'],
     'ignore_repeated_ngrams': False,  # 是否避免重复bigram

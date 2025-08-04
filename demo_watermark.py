@@ -120,6 +120,16 @@ def parse_args():
         help="Seeding scheme to use to generate the greenlists at each generation and verification step.",
     )
     parser.add_argument(
+        "--window_width",
+        type=int,
+        default=4,
+    )
+    parser.add_argument(
+        "--enabled_modules",
+        type=list[str],
+        default=[],
+    )
+    parser.add_argument(
         "--gamma",
         type=float,
         default=0.25,

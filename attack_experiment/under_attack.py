@@ -16,18 +16,18 @@ attacker_names = ["replaced", "inserted", "deleted"]
 fieldnames = [
     "sampling",
     "epsilon",
-    "z threshold",
+    # "z threshold",
     "prompt",
 
     "original watermarked completion",
     "original green fraction",
     "original z score",
-    "original prediction",
+    # "original prediction",
 
     "replaced watermarked completion",
     "replaced green fraction",
     "replaced z score",
-    "replaced prediction",
+    # "replaced prediction",
 
     "inserted watermarked completion",
     "inserted green fraction",
@@ -37,12 +37,12 @@ fieldnames = [
     "deleted watermarked completion",
     "deleted green fraction",
     "deleted z score",
-    "deleted prediction",
+    # "deleted prediction",
 
     "baseline completion",
     "baseline green fraction",
     "baseline z score",
-    "baseline prediction",
+    # "baseline prediction",
 ]
 output_path = "./global_only_attack_result.csv"
 if not os.path.exists(output_path):
