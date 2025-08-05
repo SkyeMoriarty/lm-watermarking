@@ -148,7 +148,7 @@ def get_ROC(df):
         plt.title(f'ROC Curve - {type}')
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f'g ROC/ROC Curve - {type} (with ppl)')
+        plt.savefig(f'g+p+a ROC/ROC Curve - {type} (with ppl)')
         plt.show()
 
 
@@ -167,6 +167,7 @@ def draw_z_distribution(df_g, df_gp, df_gpa):
     plt.show()
 
 
+# 对比每个模块的贡献度
 def get_metrics_comparison(locs, z_thresholds):
     columns = {'seeding type': [],
                'z-score mean': [],
@@ -203,4 +204,4 @@ if __name__ == '__main__':
     df_gp = pd.read_csv(locs[2], encoding='utf-8')
     df_gpa = pd.read_csv(locs[3], encoding='utf-8')
 
-    get_ROC(df_g)
+    get_ROC(df_gpa)
