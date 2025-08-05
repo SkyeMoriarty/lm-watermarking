@@ -209,7 +209,7 @@ if __name__ == '__main__':
     # get_ROC(df_simple)
 
     for type in types:
-        texts = df_simple[type + ' watermarked completion']
-        df_simple[type + ' ppl'] = calculate_ppls(texts)
+        texts = df_gpa[type + ' watermarked completion']
+        df_gpa[type + ' ppl'] = calculate_ppls(texts)
 
-    df_simple.to_csv('simple ROC/simple_attack_result(with ppl).csv')
+    df_gpa.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl).csv')
