@@ -102,11 +102,11 @@ def calculate_ppl(text):
     return perplexity
 
 
-def calculate_mean_ppl(texts):
+def calculate_ppls(texts):
     ppls = []
     for text in texts:
         ppls.append(calculate_ppl(text))
-    return np.mean(ppls)
+    return ppls
 
 
 def get_ROC(df):
@@ -135,20 +135,21 @@ def get_ROC(df):
             youden_index = np.argmax(tpr - fpr)  # 找到最大J的索引
             best_thresholds.append(thresholds[youden_index])
 
-            ppl = calculate_mean_ppl(texts)
+            # ppls = calculate_ppls(texts)
+            # ppl = np.mean(ppls)
 
             # 绘制 ROC 曲线
             if epsilon == 0:
-                plt.plot(fpr, tpr, label=f'unattacked, AUC = {roc_auc:.3f}, PPL = {ppl:.3f}')
+                plt.plot(fpr, tpr, label=f'unattacked, AUC = {roc_auc:.3f}')
             else:
-                plt.plot(fpr, tpr, label=f'ε = {epsilon}, AUC = {roc_auc:.3f}, PPL = {ppl:.3f}')
+                plt.plot(fpr, tpr, label=f'ε = {epsilon}, AUC = {roc_auc:.3f}')
         plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
         plt.xlabel('False Positive Rate (FPR)')
         plt.ylabel('True Positive Rate (TPR)')
         plt.title(f'ROC Curve - {type}')
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f'simple ROC/ROC Curve - {type} (with ppl)')
+        plt.savefig(f'simple ROC/ROC Curve - {type} ')
         plt.show()
 
 
@@ -205,4 +206,10 @@ if __name__ == '__main__':
     df_gp = pd.read_csv(locs[2], encoding='utf-8')
     df_gpa = pd.read_csv(locs[3], encoding='utf-8')
 
-    get_ROC(df_simple)
+    # get_ROC(df_simple)
+
+    for type in types:
+        texts = df_simple[type + ' watermarked completion']
+        df_simple[type + ' ppl'] = calculate_ppls(texts)
+
+    df_simple.to_csv('simple ROC/simple_attack_result(with ppl).csv')
