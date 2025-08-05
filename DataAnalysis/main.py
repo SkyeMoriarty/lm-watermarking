@@ -11,12 +11,12 @@ import math
 epsilons = [0, 0.1, 0.3, 0.5]
 types = ['original', 'replaced', 'inserted', 'deleted']
 
-# model_name = "facebook/opt-2.7b"
-# tokenizer = AutoTokenizer.from_pretrained(model_name)
-# model = AutoModelForCausalLM.from_pretrained(model_name)
-# model.eval()  # 推理模式
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model.to(device)
+model_name = "facebook/opt-2.7b"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+model.eval()  # 推理模式
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 
 def filter_epsilon(df, epsilon):
@@ -196,13 +196,13 @@ def get_metrics_comparison(locs, z_thresholds):
 
 
 if __name__ == '__main__':
-    locs = ['simple ROC/simple_attack_result.csv',
-            'g ROC/g_attack_result.csv',
-            'g+p ROC/g+p_attack_result.csv',
-            'g+p+a ROC/g+p+a_attack_result.csv']
+    # locs = ['simple ROC/simple_attack_result.csv',
+    #         'g ROC/g_attack_result.csv',
+    #         'g+p ROC/g+p_attack_result.csv',
+    #         'g+p+a ROC/g+p+a_attack_result.csv']
 
-    z_thresholds = [4, 5, 6]
-    get_metrics_comparison(locs, z_thresholds)
+    # z_thresholds = [4, 5, 6]
+    # get_metrics_comparison(locs, z_thresholds)
 
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
@@ -216,3 +216,11 @@ if __name__ == '__main__':
     #     df_gpa[type + ' ppl'] = calculate_ppls(texts)
     #
     # df_gpa.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl).csv')
+
+    df = pd.read_csv('simple ROC/simple_attack_result(51-100).csv')
+    # get_ROC(df)
+    for type in types:
+        texts = df[type + ' watermarked completion']
+        df[type + ' ppl'] = calculate_ppls(texts)
+
+    df.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl).csv')
