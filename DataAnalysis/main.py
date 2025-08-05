@@ -148,7 +148,7 @@ def get_ROC(df):
         plt.title(f'ROC Curve - {type}')
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f'g+p+a ROC/ROC Curve - {type} (with ppl)')
+        plt.savefig(f'simple ROC/ROC Curve - {type} (with ppl)')
         plt.show()
 
 
@@ -200,8 +200,9 @@ if __name__ == '__main__':
             'g+p ROC/g+p_attack_result.csv',
             'g+p+a ROC/g+p+a_attack_result.csv']
 
+    df_simple = pd.read_csv(locs[0], encoding='utf-8')
     df_g = pd.read_csv(locs[1], encoding='utf-8')
     df_gp = pd.read_csv(locs[2], encoding='utf-8')
     df_gpa = pd.read_csv(locs[3], encoding='utf-8')
 
-    get_ROC(df_gpa)
+    get_ROC(df_simple)
