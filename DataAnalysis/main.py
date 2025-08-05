@@ -223,4 +223,4 @@ if __name__ == '__main__':
         texts = df[type + ' watermarked completion']
         df[type + ' ppl'] = calculate_ppls(texts)
 
-    df.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl).csv')
+    df.to_csv('simple ROC/g+p+a_attack_result(with ppl).csv')
