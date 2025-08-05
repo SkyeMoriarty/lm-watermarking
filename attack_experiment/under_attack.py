@@ -7,7 +7,6 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-# 第13条数据会报错
 dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[51:100]")
 
 epsilons = [0.1, 0.3, 0.5]
@@ -45,7 +44,7 @@ fieldnames = [
     "baseline z score",
     # "baseline prediction",
 ]
-output_path = "./simple1_attack_result.csv"
+output_path = "./g+p+a_attack_result(51-100).csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
