@@ -39,7 +39,7 @@ arg_dict = {
     'seeding_scheme': 'simple_1',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
     'gamma': 0.25, 
     'delta': 2.0,
-    'context_width': 1,  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    'context_width': 2,  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!包括candidate的长度1
     'normalizers': '',
     'enabled_modules': ['global', 'position', 'anchor'],
     'ignore_repeated_ngrams': False,  # 是否避免重复bigram
