@@ -208,13 +208,13 @@ if __name__ == '__main__':
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
     # df_gp = pd.read_csv(locs[2], encoding='utf-8')
-    df_gpa = pd.read_csv('g+p+a ROC/g+p+a_attack_result(51-100).csv', encoding='utf-8')
+    df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
     #
     # # get_ROC(df_simple)
     #
     for type in types:
-        texts = df_gpa[type + ' watermarked completion']
-        df_gpa[type + ' ppl'] = calculate_ppls(texts)
+        texts = df_hs[type + ' watermarked completion']
+        df_hs[type + ' ppl'] = calculate_ppls(texts)
 
-    df_gpa.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl)(51-100).csv')
+    df_hs.to_csv('hashed simple ROC/hashed_simple_attack_result(with ppl).csv')
 
