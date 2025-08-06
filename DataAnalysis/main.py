@@ -11,12 +11,12 @@ import math
 epsilons = [0, 0.1, 0.3, 0.5]
 types = ['original', 'replaced', 'inserted', 'deleted']
 
-model_name = "facebook/opt-2.7b"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
-model.eval()  # 推理模式
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+# model_name = "facebook/opt-2.7b"
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForCausalLM.from_pretrained(model_name)
+# model.eval()  # 推理模式
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# model.to(device)
 
 
 def filter_epsilon(df, epsilon):

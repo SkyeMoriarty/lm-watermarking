@@ -32,4 +32,22 @@ def compute_asr(df, z_threshold, r_max=4):
 if __name__ == '__main__':
     loc = 'simple ROC/simple_attack_result(with ppl).csv'
     df = pd.read_csv(loc, encoding='utf-8')
-    print(compute_asr(df, 4))
+    results = compute_asr(df, 4)
+
+    loc_gpa = 'g+p+a ROC/g+p+a_attack_result(with ppl).csv'
+    df_gpa = pd.read_csv(loc_gpa, encoding='utf-8')
+    results_gpa = compute_asr(df_gpa, 4)
+
+    rows = []
+    for type in types:
+        for epsilon in results[type]:
+            row = {
+                "attack_type": type,
+                "epsilon": epsilon,
+                "baseline": f"{results[type][epsilon]['asr']:.2%}",
+                "optimized": f"{results_gpa[type][epsilon]['asr']:.2%}"
+            }
+            rows.append(row)
+
+    df = pd.DataFrame(rows)
+    df.to_csv("baseline comparison/asr_comparison.csv", index=False)

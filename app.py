@@ -36,10 +36,10 @@ arg_dict = {
     'n_beams': 1,  # 即不使用beam search
     'sampling_temp': 0.7,  # 控制采样多样性，越低确定性越强
     'use_gpu': True, 
-    'seeding_scheme': 'hybrid',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
+    'seeding_scheme': 'simple_1',  # prf生成策略!!!!!!!!!!!!!!!!!!!!!!!!
     'gamma': 0.25, 
     'delta': 2.0,
-    'context_width': 4,  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!包括candidate的长度1
+    'context_width': 2,  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!包括candidate的长度1
     'normalizers': '',
     'enabled_modules': ['global', 'position', 'anchor'],
     'ignore_repeated_ngrams': False,  # 是否避免重复bigram
