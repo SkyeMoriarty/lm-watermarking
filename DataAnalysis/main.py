@@ -11,12 +11,12 @@ import math
 epsilons = [0, 0.1, 0.3, 0.5]
 types = ['original', 'replaced', 'inserted', 'deleted']
 
-# model_name = "facebook/opt-2.7b"
-# tokenizer = AutoTokenizer.from_pretrained(model_name)
-# model = AutoModelForCausalLM.from_pretrained(model_name)
-# model.eval()  # 推理模式
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model.to(device)
+model_name = "facebook/opt-2.7b"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+model.eval()  # 推理模式
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 
 def filter_epsilon(df, epsilon):
@@ -169,7 +169,7 @@ def draw_z_distribution(df_g, df_gp, df_gpa):
 
 
 # 对比每个模块的贡献度
-def get_metrics_comparison(locs, z_thresholds):
+def get_metrics_comparison(locs, z_thresholds, des):
     columns = {'seeding type': [],
                'z-score mean': [],
                'z-score std': [],
@@ -192,28 +192,29 @@ def get_metrics_comparison(locs, z_thresholds):
         z_baseline = df['baseline z score']
 
     res = pd.DataFrame(columns)
-    res.to_csv('ablation study/metrics comparison1.csv', index=False, encoding='utf-8')
+    res.to_csv(des, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':
-    locs = ['simple ROC/simple_attack_result(with ppl).csv',
-            'g ROC/g_attack_result.csv',
-            'g+p ROC/g+p_attack_result.csv',
-            'g+p+a ROC/g+p+a_attack_result.csv']
-
-    z_thresholds = [4, 5, 6]
-    get_metrics_comparison(locs, z_thresholds)
+    # locs = ['simple ROC/simple_attack_result(with ppl).csv',
+    #         'g ROC/g_attack_result.csv',
+    #         'g+p ROC/g+p_attack_result.csv',
+    #         'g+p+a ROC/g+p+a_attack_result(with ppl).csv']
+    #
+    # z_thresholds = [4, 5, 6]
+    # des = 'baseline comparison/basic metrics'
+    # get_metrics_comparison(locs, z_thresholds)
 
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
     # df_gp = pd.read_csv(locs[2], encoding='utf-8')
-    # df_gpa = pd.read_csv(locs[3], encoding='utf-8')
+    df_gpa = pd.read_csv('g+p+a ROC/g+p+a_attack_result(51-100).csv', encoding='utf-8')
     #
     # # get_ROC(df_simple)
     #
-    # for type in types:
-    #     texts = df_gpa[type + ' watermarked completion']
-    #     df_gpa[type + ' ppl'] = calculate_ppls(texts)
-    #
-    # df_gpa.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl).csv')
+    for type in types:
+        texts = df_gpa[type + ' watermarked completion']
+        df_gpa[type + ' ppl'] = calculate_ppls(texts)
+
+    df_gpa.to_csv('g+p+a ROC/g+p+a_attack_result(with ppl)(51-100).csv')
 
