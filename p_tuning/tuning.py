@@ -37,13 +37,13 @@ def load_configured_model(args):
     if not args.skip_model_load:
         peft_config = PrefixTuningConfig(
             task_type=TaskType.CAUSAL_LM,
-            inference_mode=False,  # 表示我们要训练，不是推理
-            num_virtual_tokens=16,  # 每层transformer前加16个virtual token
+            inference_mode=False,
+            num_virtual_tokens=16,
             encoder_hidden_size=model.config.hidden_size,
             prefix_projection=True,
         )
 
-        model = get_peft_model(model, peft_config)  # 得到注入了前缀token的model
+        model = get_peft_model(model, peft_config)
     return tokenizer, model
 
 

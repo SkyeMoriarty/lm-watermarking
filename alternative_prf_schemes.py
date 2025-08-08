@@ -173,7 +173,7 @@ def multi_anchored_minhash_prf(input_ids: torch.LongTensor,
 
     # 第二次扰动
     values = [v for v in [anchor_val, global_val, position_val] if v is not None]
-    x = salt_key*hashint(torch.tensor([sum(values)], device=input_ids.device)).item()
+    x = salt_key*hashint(torch.tensor([min(values)], device=input_ids.device)).item()
     return x
 
 

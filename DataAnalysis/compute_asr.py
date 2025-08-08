@@ -34,6 +34,10 @@ if __name__ == '__main__':
     df = pd.read_csv(loc, encoding='utf-8')
     results = compute_asr(df, 4)
 
+    loc_hs = 'hashed simple ROC/hashed_simple_attack_result(with ppl).csv'
+    df = pd.read_csv(loc_hs, encoding='utf-8')
+    results_hs = compute_asr(df, 4)
+
     loc_gpa = 'g+p+a ROC/g+p+a_attack_result(with ppl).csv'
     df_gpa = pd.read_csv(loc_gpa, encoding='utf-8')
     results_gpa = compute_asr(df_gpa, 4)
@@ -45,6 +49,7 @@ if __name__ == '__main__':
                 "attack_type": type,
                 "epsilon": epsilon,
                 "baseline": f"{results[type][epsilon]['asr']:.2%}",
+                "hashed baseline": f"{results_hs[type][epsilon]['asr']:.2%}",
                 "optimized": f"{results_gpa[type][epsilon]['asr']:.2%}"
             }
             rows.append(row)

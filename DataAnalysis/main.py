@@ -11,12 +11,12 @@ import math
 epsilons = [0, 0.1, 0.3, 0.5]
 types = ['original', 'replaced', 'inserted', 'deleted']
 
-model_name = "facebook/opt-2.7b"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
-model.eval()  # 推理模式
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+# model_name = "facebook/opt-2.7b"
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForCausalLM.from_pretrained(model_name)
+# model.eval()  # 推理模式
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# model.to(device)
 
 
 def filter_epsilon(df, epsilon):
@@ -149,7 +149,7 @@ def get_ROC(df):
         plt.title(f'ROC Curve - {type}')
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f'simple ROC/ROC Curve - {type} (more)')
+        plt.savefig(f'g+p+a ROC/ROC Curve - {type} (more)')
         plt.show()
 
 
@@ -196,10 +196,11 @@ def get_metrics_comparison(locs, z_thresholds, des):
 
 
 if __name__ == '__main__':
-    # locs = ['simple ROC/simple_attack_result(with ppl).csv',
-    #         'g ROC/g_attack_result.csv',
-    #         'g+p ROC/g+p_attack_result.csv',
-    #         'g+p+a ROC/g+p+a_attack_result(with ppl).csv']
+    locs = ['simple ROC/simple_attack_result(with ppl).csv',
+            'g ROC/g_attack_result.csv',
+            'g+p ROC/g+p_attack_result.csv',
+            'g+p+a ROC/g+p+a_attack_result(with ppl).csv']
+    df = pd.read_csv(locs[3], encoding='utf-8')
     #
     # z_thresholds = [4, 5, 6]
     # des = 'baseline comparison/basic metrics'
@@ -208,13 +209,13 @@ if __name__ == '__main__':
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
     # df_gp = pd.read_csv(locs[2], encoding='utf-8')
-    df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
+    # df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
+    # #
+    get_ROC(df)
     #
-    # # get_ROC(df_simple)
+    # for type in types:
+    #     texts = df_hs[type + ' watermarked completion']
+    #     df_hs[type + ' ppl'] = calculate_ppls(texts)
     #
-    for type in types:
-        texts = df_hs[type + ' watermarked completion']
-        df_hs[type + ' ppl'] = calculate_ppls(texts)
-
-    df_hs.to_csv('hashed simple ROC/hashed_simple_attack_result(with ppl).csv')
+    # df_hs.to_csv('hashed simple ROC/hashed_simple_attack_result(with ppl).csv')
 
