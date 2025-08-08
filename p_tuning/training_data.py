@@ -16,7 +16,7 @@ import json
 
 def load_data():
     dataset = load_dataset("ag_news", split="train")
-    subset = dataset.select(range(500))
+    subset = dataset.select(range(500, 1000))
     return subset
 
 
