@@ -1,0 +1,10 @@
+attack_type,epsilon,sum,min
+replaced,0.1,2.02%,3.03%
+replaced,0.3,2.02%,1.01%
+replaced,0.5,5.05%,4.04%
+inserted,0.1,2.02%,3.03%
+inserted,0.3,1.01%,2.02%
+inserted,0.5,2.02%,1.01%
+deleted,0.1,71.72%,63.64%
+deleted,0.3,42.42%,35.35%
+deleted,0.5,42.42%,36.36%

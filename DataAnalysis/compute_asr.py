@@ -30,29 +30,32 @@ def compute_asr(df, z_threshold, r_max=4):
 
 
 if __name__ == '__main__':
-    loc = 'simple ROC/simple_attack_result(with ppl).csv'
-    df = pd.read_csv(loc, encoding='utf-8')
-    results = compute_asr(df, 4)
-
-    loc_hs = 'hashed simple ROC/hashed_simple_attack_result(with ppl).csv'
-    df = pd.read_csv(loc_hs, encoding='utf-8')
-    results_hs = compute_asr(df, 4)
+    # loc = 'simple ROC/simple_attack_result(with ppl).csv'
+    # df = pd.read_csv(loc, encoding='utf-8')
+    # results = compute_asr(df, 4)
+    #
+    # loc_hs = 'hashed simple ROC/hashed_simple_attack_result(with ppl).csv'
+    # df = pd.read_csv(loc_hs, encoding='utf-8')
+    # results_hs = compute_asr(df, 4)
 
     loc_gpa = 'g+p+a ROC/g+p+a_attack_result(with ppl).csv'
     df_gpa = pd.read_csv(loc_gpa, encoding='utf-8')
     results_gpa = compute_asr(df_gpa, 4)
 
+    loc_gpa = 'g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv'
+    df_gpa = pd.read_csv(loc_gpa, encoding='utf-8')
+    results_gpa_min = compute_asr(df_gpa, 4)
+
     rows = []
     for type in types:
-        for epsilon in results[type]:
+        for epsilon in results_gpa[type]:
             row = {
                 "attack_type": type,
                 "epsilon": epsilon,
-                "baseline": f"{results[type][epsilon]['asr']:.2%}",
-                "hashed baseline": f"{results_hs[type][epsilon]['asr']:.2%}",
-                "optimized": f"{results_gpa[type][epsilon]['asr']:.2%}"
+                "sum": f"{results_gpa[type][epsilon]['asr']:.2%}",
+                "min": f"{results_gpa_min[type][epsilon]['asr']:.2%}",
             }
             rows.append(row)
 
     df = pd.DataFrame(rows)
-    df.to_csv("baseline comparison/asr_comparison.csv", index=False)
+    df.to_csv("aggregation comparison/asr_comparison.csv", index=False)
