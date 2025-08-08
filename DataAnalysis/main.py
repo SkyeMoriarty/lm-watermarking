@@ -211,11 +211,11 @@ if __name__ == '__main__':
     # df_gp = pd.read_csv(locs[2], encoding='utf-8')
     # df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
     # #
-    get_ROC(df)
+    # get_ROC(df)
     #
-    # for type in types:
-    #     texts = df_hs[type + ' watermarked completion']
-    #     df_hs[type + ' ppl'] = calculate_ppls(texts)
-    #
-    # df_hs.to_csv('hashed simple ROC/hashed_simple_attack_result(with ppl).csv')
+    for type in types:
+        texts = df[type + ' watermarked completion']
+        df[type + ' ppl'] = calculate_ppls(texts)
+
+    df.to_csv('g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv')
 
