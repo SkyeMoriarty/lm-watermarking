@@ -86,7 +86,7 @@ def multiplicative_prf(input_ids: torch.LongTensor, context_width: int, salt_key
 
 
 def additive_prf(input_ids: torch.LongTensor, context_width: int, enabled_modules, salt_key: int) -> int:
-    return hashint(salt_key * input_ids[-context_width:]).sum().item()
+    return salt_key * input_ids[-context_width:].sum().item()
 
 
 def minfunc_prf(input_ids: torch.LongTensor, context_width: int, salt_key: int) -> int:
