@@ -166,7 +166,7 @@ def get_ROC(df, dir):
         plt.title(f'ROC Curve - {type}')
         plt.legend()
         plt.tight_layout()
-        plt.savefig(dir + f'/ROC Curve - {type}')
+        plt.savefig(dir + f'/ROC Curve - {type}1')
         plt.show()
 
 
@@ -215,16 +215,17 @@ if __name__ == '__main__':
             'g+p ROC/g+p_attack_result.csv',
             'g+p+a ROC/g+p+a_attack_result.csv']
     #
-    z_thresholds = [3, 4, 5]
-    des = 'ablation study/metrics comparison.csv'
-    get_metrics_comparison(locs, z_thresholds, des)
+    # z_thresholds = [3, 4, 5]
+    # des = 'ablation study/metrics comparison.csv'
+    # get_metrics_comparison(locs, z_thresholds, des)
 
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
-    # df_gp = pd.read_csv(locs[2], encoding='utf-8')
+    df = pd.read_csv(locs[2], encoding='utf-8')
+    dir = locs[2].split("/")[0]
     # df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
     # #
-    # get_ROC(df)
+    get_ROC(df, dir)
     #
     # for type in types:
     #     texts = df[type + ' watermarked completion']
