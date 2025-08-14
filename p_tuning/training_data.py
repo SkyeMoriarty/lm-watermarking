@@ -33,6 +33,12 @@ def save_to_json(inputs, targets):
             f.write("\n")
 
 
+def save_single_to_json(input, target):
+    with open("./p_tuning_data.jsonl", "a") as f:
+        json.dump({"input": input, "target": target}, f)
+        f.write("\n")
+
+
 def get_train_data(args):
     if not args.skip_model_load:
         model, tokenizer, device, _ = load_model(args)
@@ -47,14 +53,15 @@ def get_train_data(args):
         for prompt in dataloader:
             redecoded_input, _, _, decoded_output_with_watermark, _, _ = generate(prompt, args, model=model,
                                                                                   device=device, tokenizer=tokenizer)
-            inputs.append(redecoded_input)
-            targets.append(decoded_output_with_watermark)
-            print()
-            print("Input: " + redecoded_input)
-            print()
-            print("Target: " + decoded_output_with_watermark)
+            # inputs.append(redecoded_input)
+            # targets.append(decoded_output_with_watermark)
+            # print()
+            # print("Input: " + redecoded_input)
+            # print()
+            # print("Target: " + decoded_output_with_watermark)
+            save_single_to_json(redecoded_input, decoded_output_with_watermark)
 
-    save_to_json(inputs, targets)
+    # save_to_json(inputs, targets)
 
 
 if __name__ == "__main__":
