@@ -147,7 +147,7 @@ def get_output_without_watermark(args, text, model, base_model, tokenizer, devic
     return output_dict
 
 
-def get_output_dicts_without_watermark(args, text, model, base_model, tokenizer, device):
+def get_output_dicts_without_watermark(args):
     args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
 
     # 加载模型、分词器、device
@@ -156,15 +156,13 @@ def get_output_dicts_without_watermark(args, text, model, base_model, tokenizer,
     else:
         model, tokenizer, device, base_model = None, None, None, None
 
-    output_dicts = []
     for item in dataset:
         text = item["article"]
         if len(text) < 20:
             continue
         curr_output_dict = get_output_without_watermark(args, text, model, base_model, tokenizer, device)
         for i in range(3):
-            output_dicts.append(curr_output_dict)
-        save_to_csv(output_dicts)
+            save_to_csv(curr_output_dict)
 
 
 def get_single_attacked_output_dict(args, original, tokenizer, device, epsilon):
