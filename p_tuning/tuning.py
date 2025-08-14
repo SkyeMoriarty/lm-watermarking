@@ -1,7 +1,7 @@
 from datasets import load_dataset, Dataset
 
 from demo_watermark import load_model
-from peft import get_peft_model, PrefixTuningConfig, TaskType
+from peft import get_peft_model, PromptEncoderConfig, TaskType
 from transformers import Trainer, TrainingArguments, default_data_collator
 
 
@@ -11,20 +11,26 @@ def load_training_data(path='./p_tuning_data.jsonl'):
 
 
 def tokenize_fn(single, tokenizer):
-    full_input = single['input'].strip() + ' ' + single['target'].strip()
-    tokenized = tokenizer(full_input,
-                          padding="max_length",
-                          truncation=True,
-                          max_length=256,
-                          return_tensors=None,)
+    prompt = single["input"].strip()
+    target = single["target"].strip()
+    full = prompt + " " + target
+    tokenized = tokenizer(full, padding="max_length", truncation=True, max_length=256)
 
+    # attention mask告诉模型哪些token需要被关注，padding位置上的mask就是0
     if isinstance(tokenized['attention_mask'][0], list):  # 如果是嵌套列表
         tokenized['attention_mask'] = tokenized['attention_mask'][0]  # 取第一个元素
 
-    tokenized["labels"] = [
-        (id if mask == 1 else -100)
-        for id, mask in zip(tokenized["input_ids"], tokenized["attention_mask"])
-    ]
+    prompt_ids = tokenizer(prompt, add_special_tokens=False)["input_ids"]
+    prompt_len = len(prompt_ids) + 1  # +1 for the space we added
+
+    # labels告诉模型训练中期望预测的token，供计算loss使用
+    # 对于无需预测的token（如padding），label就会设为-100
+    labels = tokenized["input_ids"][:]
+    # mask out prompt tokens and padding
+    for i in range(len(labels)):
+        if i < prompt_len or tokenized["attention_mask"][i] == 0:
+            labels[i] = -100
+    tokenized["labels"] = labels
     return tokenized
 
 
@@ -35,12 +41,11 @@ def load_configured_model(args):
         model, tokenizer, device, _ = None, None, None, None
 
     if not args.skip_model_load:
-        peft_config = PrefixTuningConfig(
+        peft_config = PromptEncoderConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False,
-            num_virtual_tokens=16,
+            num_virtual_tokens=16,  # 对比{8, 16, 32}
             encoder_hidden_size=model.config.hidden_size,
-            prefix_projection=True,
         )
 
         model = get_peft_model(model, peft_config)
@@ -59,6 +64,7 @@ def train(model, tokenized_dataset, tokenizer):
         logging_steps=10,
         save_steps=500,
         logging_dir="./logs",
+        fp16=True,
         label_names=["labels"]
     )
 

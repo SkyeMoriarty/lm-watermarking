@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>G2Plot Chart</title>
+  <!-- 引入 G2Plot 库 -->
+  <script src="https://unpkg.com/@antv/g2plot@2.4.20/dist/g2plot.min.js"></script>
+</head>
+<body>
+<!--    <h3 style="margin:0">AUC Score</h3>-->
+<!--    <p style="margin:4px 0 8px;color:#666">Under Deletion Attack</p>-->
+    <div id="container" style="width:800px;height:500px"></div>
+  <script>
+    const plot = new G2Plot.Line(container, {
+      data: [
+      {
+    "series": "g",
+    "x": "0",
+    "y": 1
+  },
+  {
+    "series": "g",
+    "x": "0.1",
+    "y": 0.974
+  },
+  {
+    "series": "g",
+    "x": "0.3",
+    "y": 0.95
+  },
+  {
+    "series": "g",
+    "x": "0.5",
+    "y": 0.849
+  },
+  {
+    "series": "g+p",
+    "x": "0",
+    "y": 1
+  },
+  {
+    "series": "g+p",
+    "x": "0.1",
+    "y": 0.998
+  },
+  {
+    "series": "g+p",
+    "x": "0.3",
+    "y": 0.982
+  },
+  {
+    "series": "g+p",
+    "x": "0.5",
+    "y": 0.922
+  },
+  {
+    "series": "g+p+a",
+    "x": "0",
+    "y": 1
+  },
+  {
+    "series": "g+p+a",
+    "x": "0.1",
+    "y": 0.999
+  },
+  {
+    "series": "g+p+a",
+    "x": "0.3",
+    "y": 0.948
+  },
+  {
+    "series": "g+p+a",
+    "x": "0.5",
+    "y": 0.879
+  }
+    ],
+      "title": {
+        "visible": true,
+        "text": "AUC Score"
+      },
+      "description": {
+        "visible": true,
+        "text": "Under Replacement Attack"
+      },
+      "legend": {
+        "position": "right-top",
+        "flipPage": false,
+        "itemName": {
+            "style": {
+              "fontSize": 20
+            }
+        }
+      },
+      "xAxis": {
+        "title": {
+          "visible": true,
+          "text": "ε"
+        },
+        "label": {
+            "style": {
+                 "fontSize": 20
+            }
+        }
+      },
+      "yAxis": {
+        "title": {
+          "visible": true,
+          "text": "AUC"
+        },
+        "label": {
+            "style": {
+                 "fontSize": 20
+            }
+        },
+        "min": 0.8,
+        "max": 1
+      },
+      "point": {
+        "visible": true
+      },
+      "label": {
+        "visible": true,
+      },
+      "forceFit": true,
+      "width": 560,
+      "height": 369,
+      "xField": "x",
+      "yField": "y",
+      "seriesField": "series",
+      "color": [
+        "#5B8FF9",
+        "#5AD8A6",
+        "#e8684a"
+      ]
+    });
+    plot.render();
+  </script>
+</body>
+</html>

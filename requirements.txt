@@ -59,3 +59,13 @@ safetensors
 accelerate
 pydantic
 typer
+matplotlib
+pillow
+cycler
+contourpy
+fonttools
+freetype
+unicodedata2
+importlib_resources
+tornado
+kiwisolver

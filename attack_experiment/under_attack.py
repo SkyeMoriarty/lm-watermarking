@@ -7,44 +7,45 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[51:100]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:20]")
 
 epsilons = [0.1, 0.3, 0.5]
 attackers = [Replacement(), Insertion(), Deletion()]
 attacker_names = ["replaced", "inserted", "deleted"]
 
-fieldnames = [
-    "sampling",
-    "epsilon",
-    # "z threshold",
-    "prompt",
-
-    "original watermarked completion",
-    "original green fraction",
-    "original z score",
-    # "original prediction",
-
-    "replaced watermarked completion",
-    "replaced green fraction",
-    "replaced z score",
-    # "replaced prediction",
-
-    "inserted watermarked completion",
-    "inserted green fraction",
-    "inserted z score",
-    # "inserted prediction",
-
-    "deleted watermarked completion",
-    "deleted green fraction",
-    "deleted z score",
-    # "deleted prediction",
-
-    "baseline completion",
-    "baseline green fraction",
-    "baseline z score",
-    # "baseline prediction",
-]
-output_path = "./g+p+a_attack_result(min).csv"
+# fieldnames = [
+#     "sampling",
+#     "epsilon",
+#     # "z threshold",
+#     "prompt",
+#
+#     "original watermarked completion",
+#     "original green fraction",
+#     "original z score",
+#     # "original prediction",
+#
+#     "replaced watermarked completion",
+#     "replaced green fraction",
+#     "replaced z score",
+#     # "replaced prediction",
+#
+#     "inserted watermarked completion",
+#     "inserted green fraction",
+#     "inserted z score",
+#     # "inserted prediction",
+#
+#     "deleted watermarked completion",
+#     "deleted green fraction",
+#     "deleted z score",
+#     # "deleted prediction",
+#
+#     "baseline completion",
+#     "baseline green fraction",
+#     "baseline z score",
+#     # "baseline prediction",
+# ]
+fieldnames = ['unwatermarked completion', 'unwatermarked green fraction', 'unwatermarked z score']
+output_path = "./g+p+a_unwatermarked.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -127,6 +128,43 @@ def get_single_origin_output_dict(args, text, model, base_model, tokenizer, devi
 #     with open("./new_baseline_attack_result.csv", "w", newline='', encoding="utf-8") as f:
 #         writer = csv.writer(f)
 #         writer.writerows(rows)
+
+
+def get_output_without_watermark(args, text, model, base_model, tokenizer, device):
+    output_dict = {}
+
+    # 截取prompt，得到有/无水印的生成文本
+    prompt, _, output_without_watermark, output_with_watermark, _, _ = generate(text, args,
+                                                                                model=model,
+                                                                                device=device,
+                                                                                tokenizer=tokenizer,
+                                                                                base_model=base_model)
+    original_result, _ = detect(output_without_watermark, args, device=device, tokenizer=tokenizer)
+    original_result = dict(original_result)
+    output_dict["unwatermarked completion"] = output_without_watermark
+    output_dict["unwatermarked green fraction"] = original_result['Fraction of T in Greenlist']
+    output_dict["unwatermarked z score"] = original_result['z-score']
+    return output_dict
+
+
+def get_output_dicts_without_watermark(args, text, model, base_model, tokenizer, device):
+    args.normalizers = (args.normalizers.split(",") if args.normalizers else [])
+
+    # 加载模型、分词器、device
+    if not args.skip_model_load:
+        model, tokenizer, device, base_model = load_model(args)
+    else:
+        model, tokenizer, device, base_model = None, None, None, None
+
+    output_dicts = []
+    for item in dataset:
+        text = item["article"]
+        if len(text) < 20:
+            continue
+        curr_output_dict = get_output_without_watermark(args, text, model, base_model, tokenizer, device)
+        for i in range(3):
+            output_dicts.append(curr_output_dict)
+        save_to_csv(output_dicts)
 
 
 def get_single_attacked_output_dict(args, original, tokenizer, device, epsilon):

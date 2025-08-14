@@ -11,12 +11,12 @@ import math
 epsilons = [0, 0.1, 0.3, 0.5]
 types = ['original', 'replaced', 'inserted', 'deleted']
 
-model_name = "facebook/opt-2.7b"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
-model.eval()  # 推理模式
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+# model_name = "facebook/opt-2.7b"
+# tokenizer = AutoTokenizer.from_pretrained(model_name)
+# model = AutoModelForCausalLM.from_pretrained(model_name)
+# model.eval()  # 推理模式
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# model.to(device)
 
 
 def filter_epsilon(df, epsilon):
@@ -109,10 +109,18 @@ def calculate_ppls(texts):
     return ppls
 
 
-def get_ROC(df):
-    best_thresholds = []
+def save_best_thresholds(thresholds, dir):
+    df = pd.DataFrame(thresholds, index=types[1:], columns=epsilons)
+    df.to_csv("ablation study/" + dir.split()[0] + " best thresholds.csv")
+
+
+def get_ROC(df, dir):
+    best_thresholds = [[0 for _ in range(4)] for _ in range(3)]
+    print(np.shape(best_thresholds))
+    i = 0
     for type in types[1:]:
-        plt.figure(figsize=(8, 6))
+        # plt.figure(figsize=(8, 6))
+        j = 0
         for epsilon in epsilons:
             if epsilon == 0:
                 filtered_df = filter_epsilon(df, 0.1)
@@ -132,25 +140,34 @@ def get_ROC(df):
             fpr, tpr, thresholds = roc_curve(y_true, y_predict)
             roc_auc = auc(fpr, tpr)
 
-            youden_index = np.argmax(tpr - fpr)  # 找到最大J的索引
-            best_thresholds.append(thresholds[youden_index])
-
-            # ppls = calculate_ppls(texts)
-            # ppl = np.mean(ppls)
+            # 假设希望 TPR >= 90%, FPR <= 5%
+            mask = (tpr >= 0.9) & (fpr <= 0.05)
+            if mask.any():
+                candidate_thresholds = thresholds[mask]
+                best_threshold = candidate_thresholds[np.argmin(fpr[mask])]
+            else:
+                # fallback: youden's J
+                youden_index = np.argmax(tpr - fpr)
+                best_threshold = thresholds[youden_index]
+            best_thresholds[i][j] = best_threshold
+            print(i, j, best_threshold)
+            j += 1
+        i += 1
+    save_best_thresholds(best_thresholds, dir)
 
             # 绘制 ROC 曲线
-            if epsilon == 0:
-                plt.plot(fpr, tpr, label=f'unattacked, AUC = {roc_auc:.3f}')
-            else:
-                plt.plot(fpr, tpr, label=f'ε = {epsilon}, AUC = {roc_auc:.3f}')
-        plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
-        plt.xlabel('False Positive Rate (FPR)')
-        plt.ylabel('True Positive Rate (TPR)')
-        plt.title(f'ROC Curve - {type}')
-        plt.legend()
-        plt.tight_layout()
-        plt.savefig(f'g+p+a ROC(min)/ROC Curve - {type}')
-        plt.show()
+        #     if epsilon == 0:
+        #         plt.plot(fpr, tpr, label=f'unattacked, AUC = {roc_auc:.3f}')
+        #     else:
+        #         plt.plot(fpr, tpr, label=f'ε = {epsilon}, AUC = {roc_auc:.3f}')
+        # plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
+        # plt.xlabel('False Positive Rate (FPR)')
+        # plt.ylabel('True Positive Rate (TPR)')
+        # plt.title(f'ROC Curve - {type}')
+        # plt.legend()
+        # plt.tight_layout()
+        # plt.savefig(dir + f'/ROC Curve - {type}')
+        # plt.show()
 
 
 def draw_z_distribution(df_g, df_gp, df_gpa):
@@ -188,23 +205,19 @@ def get_metrics_comparison(locs, z_thresholds, des):
         for i, (tpr, fnr) in enumerate(zip(TPRs, FNRs)):
             columns['TPR@' + str(z_thresholds[i])].append(f"{tpr:.2f}")
             columns['FNR@' + str(z_thresholds[i])].append(f"{fnr:.2f}")
-        z_watermark = df['original z score']
-        z_baseline = df['baseline z score']
 
     res = pd.DataFrame(columns)
     res.to_csv(des, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':
-    locs = ['simple ROC/simple_attack_result(with ppl).csv',
-            'g ROC/g_attack_result.csv',
+    locs = ['g ROC/g_attack_result.csv',
             'g+p ROC/g+p_attack_result.csv',
-            'g+p+a ROC(min)/g+p+a_attack_result(min).csv']
-    df = pd.read_csv(locs[3], encoding='utf-8')
+            'g+p+a ROC/g+p+a_attack_result.csv']
     #
-    # z_thresholds = [4, 5, 6]
-    # des = 'baseline comparison/basic metrics'
-    # get_metrics_comparison(locs, z_thresholds)
+    z_thresholds = [3, 4, 5]
+    des = 'ablation study/metrics comparison.csv'
+    get_metrics_comparison(locs, z_thresholds, des)
 
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
@@ -213,9 +226,13 @@ if __name__ == '__main__':
     # #
     # get_ROC(df)
     #
-    for type in types:
-        texts = df[type + ' watermarked completion']
-        df[type + ' ppl'] = calculate_ppls(texts)
+    # for type in types:
+    #     texts = df[type + ' watermarked completion']
+    #     df[type + ' ppl'] = calculate_ppls(texts)
+    #
+    # df.to_csv('g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv')
 
-    df.to_csv('g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv')
-
+    # for loc in locs:
+    #     dir = loc.split("/")[0]
+    #     df = pd.read_csv(loc, encoding='utf-8')
+    #     get_ROC(df, dir)
