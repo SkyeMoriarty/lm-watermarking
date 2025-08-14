@@ -41,7 +41,7 @@ arg_dict = {
     'delta': 2.0,
     'context_width': 4,  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!包括candidate的长度1
     'normalizers': '',
-    'enabled_modules': ['global'],
+    'enabled_modules': ['global', 'position', 'anchor'],
     'ignore_repeated_ngrams': False,  # 是否避免重复bigram
     'detection_z_threshold': 4.0,
     'select_green_tokens': True,
@@ -61,10 +61,10 @@ args.__dict__.update(arg_dict)
 #
 # main(args)
 
-# from p_tuning.training_data import get_train_data
+from p_tuning.training_data import get_train_data
+
+get_train_data(args)
+
+# from attack_experiment.under_attack import get_output_dicts_without_watermark
 #
-# get_train_data(args)
-
-from attack_experiment.under_attack import get_output_dicts_without_watermark
-
-get_output_dicts_without_watermark(args)
+# get_output_dicts_without_watermark(args)
