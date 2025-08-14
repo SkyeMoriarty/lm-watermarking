@@ -45,7 +45,7 @@ attacker_names = ["replaced", "inserted", "deleted"]
 #     # "baseline prediction",
 # ]
 fieldnames = ['unwatermarked completion', 'unwatermarked green fraction', 'unwatermarked z score']
-output_path = "./g+p_unwatermarked.csv"
+output_path = "./g_unwatermarked.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

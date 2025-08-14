@@ -221,8 +221,8 @@ if __name__ == '__main__':
 
     # df_simple = pd.read_csv(locs[0], encoding='utf-8')
     # df_g = pd.read_csv(locs[1], encoding='utf-8')
-    df = pd.read_csv(locs[2], encoding='utf-8')
-    dir = locs[2].split("/")[0]
+    df = pd.read_csv(locs[1], encoding='utf-8')
+    dir = locs[1].split("/")[0]
     # df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
     # #
     get_ROC(df, dir)
