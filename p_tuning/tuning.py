@@ -2,7 +2,8 @@ from datasets import load_dataset, Dataset
 
 from demo_watermark import load_model
 from peft import get_peft_model, PromptEncoderConfig, TaskType
-from transformers import Trainer, TrainingArguments, default_data_collator, IntervalStrategy, SchedulerType
+from transformers import Trainer, default_data_collator, IntervalStrategy, SchedulerType
+from transformers.training_args import TrainingArguments
 from sklearn.model_selection import train_test_split
 
 import pandas as pd
