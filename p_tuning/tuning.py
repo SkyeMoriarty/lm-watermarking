@@ -4,6 +4,9 @@ from demo_watermark import load_model
 from peft import get_peft_model, PromptEncoderConfig, TaskType
 from transformers import Trainer, TrainingArguments, default_data_collator
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
 
 def load_training_data(path='./p_tuning_data.jsonl'):
     dataset = load_dataset("json", data_files=path)
@@ -59,9 +62,8 @@ def train(model, tokenized_dataset, tokenizer):
         per_device_train_batch_size=4,
         num_train_epochs=2,
         learning_rate=5e-5,
-        # 和logging相关的参数
         save_total_limit=1,
-        logging_steps=10,
+        logging_steps=10,  # 每隔多少step记录一次
         save_steps=500,
         logging_dir="./logs",
         fp16=True,
@@ -78,6 +80,21 @@ def train(model, tokenized_dataset, tokenizer):
 
     trainer.train()
     print("Finished!")
+
+    logs = trainer.state.log_history
+    df = pd.DataFrame(logs)
+    loss_df = df[df["loss"].notna()].sort_values("step")
+
+    # 画图
+    plt.figure(figsize=(6, 4))
+    plt.plot(loss_df["step"], loss_df["loss"])
+    plt.xlabel("Global step")
+    plt.ylabel("Training loss")
+    plt.title("Training loss over steps")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig("training_loss_curve.png", dpi=200)
+    plt.close()
 
 
 def get_ptuned_opt(args):
