@@ -59,9 +59,9 @@ def train(model, tokenized_dataset, tokenizer):
     print("Start finetuning...")
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=4,  # 有效 batch = 16 → 每个 epoch ≈ 1600/16 = 100 步
-        num_train_epochs=5,  # 小数据多跑几轮更稳（3~6 之间可调）
+        per_device_train_batch_size=4,  # 一个batch是一次送进模型的数据量
+        gradient_accumulation_steps=4,  # 模型完成一次参数更新，有效 batch = 16 → 每个 epoch ≈ 1600/16 = 100 步
+        num_train_epochs=5,  # 把数据集完整训练一次的轮数，小数据多跑几轮更稳
 
         # ---- P-tuning 常用较高 LR；小数据加 warmup 与 weight decay 抑制过拟合 ----
         learning_rate=8e-4,  # 可在 [5e-4, 2e-3] 网格微调
@@ -71,12 +71,12 @@ def train(model, tokenized_dataset, tokenizer):
         max_grad_norm=1.0,
 
         # ---- 记录/保存：步数级评估，密集记录，避免“空图” ----
-        logging_strategy="steps",
+        # logging_strategy="steps",
         logging_steps=5,  # 100 步/epoch → 每轮约 20 个点
         logging_first_step=True,
-        evaluation_strategy="steps",
+        # evaluation_strategy="steps",
         eval_steps=20,  # 100 步/epoch → 每轮评估 5 次
-        save_strategy="steps",
+        # save_strategy="steps",
         save_steps=20,
         save_total_limit=2,
         load_best_model_at_end=True,  # 需要提供 eval_dataset 才有效
