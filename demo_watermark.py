@@ -333,7 +333,7 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
     # tokd_input = tokenizer([truncated_prompt], return_tensors="pt", padding=True, truncation=True,
     #                        max_length=args.prompt_max_length, add_special_tokens=False).to(device)
 
-    tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True,
+    tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True, padding=True,
                            max_length=args.prompt_max_length).to(device)
     truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
     redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)[0]
