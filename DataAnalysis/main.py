@@ -140,34 +140,34 @@ def get_ROC(df, dir):
             fpr, tpr, thresholds = roc_curve(y_true, y_predict)
             roc_auc = auc(fpr, tpr)
 
-            # 假设希望 TPR >= 90%, FPR <= 5%
-            mask = (tpr >= 0.9) & (fpr <= 0.05)
-            if mask.any():
-                candidate_thresholds = thresholds[mask]
-                best_threshold = candidate_thresholds[np.argmin(fpr[mask])]
-            else:
-                # fallback: youden's J
-                youden_index = np.argmax(tpr - fpr)
-                best_threshold = thresholds[youden_index]
-            best_thresholds[i][j] = best_threshold
-            print(i, j, best_threshold)
-            j += 1
-        i += 1
-    save_best_thresholds(best_thresholds, dir)
+    #         # 假设希望 TPR >= 90%, FPR <= 5%
+    #         mask = (tpr >= 0.9) & (fpr <= 0.05)
+    #         if mask.any():
+    #             candidate_thresholds = thresholds[mask]
+    #             best_threshold = candidate_thresholds[np.argmin(fpr[mask])]
+    #         else:
+    #             # fallback: youden's J
+    #             youden_index = np.argmax(tpr - fpr)
+    #             best_threshold = thresholds[youden_index]
+    #         best_thresholds[i][j] = best_threshold
+    #         print(i, j, best_threshold)
+    #         j += 1
+    #     i += 1
+    # save_best_thresholds(best_thresholds, dir)
 
-        #     # 绘制 ROC 曲线
-        #     if epsilon == 0:
-        #         plt.plot(fpr, tpr, label=f'unattacked, AUC = {roc_auc:.3f}')
-        #     else:
-        #         plt.plot(fpr, tpr, label=f'ε = {epsilon}, AUC = {roc_auc:.3f}')
-        # plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
-        # plt.xlabel('False Positive Rate (FPR)')
-        # plt.ylabel('True Positive Rate (TPR)')
-        # plt.title(f'ROC Curve - {type}')
-        # plt.legend()
-        # plt.tight_layout()
-        # plt.savefig(dir + f'/ROC Curve - {type}1')
-        # plt.show()
+            # 绘制 ROC 曲线
+            if epsilon == 0:
+                plt.plot(fpr, tpr, label=f'unattacked, AUC = {roc_auc:.3f}')
+            else:
+                plt.plot(fpr, tpr, label=f'ε = {epsilon}, AUC = {roc_auc:.3f}')
+        plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
+        plt.xlabel('False Positive Rate (FPR)')
+        plt.ylabel('True Positive Rate (TPR)')
+        plt.title(f'ROC Curve - {type}')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(dir + f'/ROC Curve - {type}')
+        plt.show()
 
 
 def draw_z_distribution(df_g, df_gp, df_gpa):
@@ -213,18 +213,16 @@ def get_metrics_comparison(locs, z_thresholds, des):
 if __name__ == '__main__':
     locs = ['g ROC/g_attack_result.csv',
             'g+p ROC/g+p_attack_result.csv',
-            'g+p+a ROC/g+p+a_attack_result.csv']
+            'g+p+a ROC/g+p+a_attack_result.csv',
+            'p tuned ROC/p_tuned_attack_result.csv']
     #
     # z_thresholds = [3, 4, 5]
     # des = 'ablation study/metrics comparison.csv'
     # get_metrics_comparison(locs, z_thresholds, des)
 
-    # df_simple = pd.read_csv(locs[0], encoding='utf-8')
-    # df_g = pd.read_csv(locs[1], encoding='utf-8')
-
-    # df_hs = pd.read_csv('hashed simple ROC/hashed_simple_attack_result.csv', encoding='utf-8')
-    # #
-    # get_ROC(df, dir)
+    df = pd.read_csv(locs[3], encoding='utf-8')
+    dir = locs[3].split('/')[0]
+    get_ROC(df, dir)
     #
     # for type in types:
     #     texts = df[type + ' watermarked completion']
@@ -232,7 +230,7 @@ if __name__ == '__main__':
     #
     # df.to_csv('g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv')
 
-    for loc in locs:
-        dir = loc.split("/")[0]
-        df = pd.read_csv(loc, encoding='utf-8')
-        get_ROC(df, dir)
+    # for loc in locs:
+    #     dir = loc.split("/")[0]
+    #     df = pd.read_csv(loc, encoding='utf-8')
+    #     get_ROC(df, dir)
