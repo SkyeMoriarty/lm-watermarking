@@ -3,6 +3,7 @@ from datasets import load_dataset, Dataset
 from demo_watermark import load_model
 from peft import get_peft_model, PromptEncoderConfig, TaskType
 from transformers import Trainer, TrainingArguments, default_data_collator, IntervalStrategy, SchedulerType
+from sklearn.model_selection import train_test_split
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ def train(model, tokenized_dataset, tokenizer):
         logging_strategy=IntervalStrategy.STEPS,
         logging_steps=5,  # 100 步/epoch → 每轮约 20 个点
         logging_first_step=True,
-        # evaluation_strategy=IntervalStrategy.STEPS,
+        evaluation_strategy=IntervalStrategy.STEPS,
         eval_steps=20,  # 100 步/epoch → 每轮评估 5 次
         save_strategy=IntervalStrategy.STEPS,
         save_steps=20,
@@ -88,10 +89,12 @@ def train(model, tokenized_dataset, tokenizer):
         report_to=[],  # 不上报外部 logger
     )
 
+    train_data, eval_data = train_test_split(tokenized_dataset, test_size=0.1, random_state=42)
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_dataset,
+        train_dataset=train_data,
+        eval_dataset=eval_data,
         tokenizer=tokenizer,
         data_collator=default_data_collator,
     )
