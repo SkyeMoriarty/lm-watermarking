@@ -7,45 +7,45 @@ from attack_models.insertion import Insertion
 from attack_models.deletion import Deletion
 from datasets import load_dataset
 
-dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:50]")
+dataset = load_dataset("cnn_dailymail", "3.0.0", split="train[:20]")
 
 epsilons = [0.1, 0.3, 0.5]
 attackers = [Replacement(), Insertion(), Deletion()]
 attacker_names = ["replaced", "inserted", "deleted"]
 
-# fieldnames = [
-#     "sampling",
-#     "epsilon",
-#     # "z threshold",
-#     "prompt",
-#
-#     "original watermarked completion",
-#     "original green fraction",
-#     "original z score",
-#     # "original prediction",
-#
-#     "replaced watermarked completion",
-#     "replaced green fraction",
-#     "replaced z score",
-#     # "replaced prediction",
-#
-#     "inserted watermarked completion",
-#     "inserted green fraction",
-#     "inserted z score",
-#     # "inserted prediction",
-#
-#     "deleted watermarked completion",
-#     "deleted green fraction",
-#     "deleted z score",
-#     # "deleted prediction",
-#
-#     "baseline completion",
-#     "baseline green fraction",
-#     "baseline z score",
-#     # "baseline prediction",
-# ]
-fieldnames = ['unwatermarked completion', 'unwatermarked green fraction', 'unwatermarked z score']
-output_path = "./g_unwatermarked.csv"
+fieldnames = [
+    "sampling",
+    "epsilon",
+    # "z threshold",
+    "prompt",
+
+    "original watermarked completion",
+    "original green fraction",
+    "original z score",
+    # "original prediction",
+
+    "replaced watermarked completion",
+    "replaced green fraction",
+    "replaced z score",
+    # "replaced prediction",
+
+    "inserted watermarked completion",
+    "inserted green fraction",
+    "inserted z score",
+    # "inserted prediction",
+
+    "deleted watermarked completion",
+    "deleted green fraction",
+    "deleted z score",
+    # "deleted prediction",
+
+    "baseline completion",
+    "baseline green fraction",
+    "baseline z score",
+    # "baseline prediction",
+]
+# fieldnames = ['unwatermarked completion', 'unwatermarked green fraction', 'unwatermarked z score']
+output_path = "./p_tuned_attack_result.csv"
 if not os.path.exists(output_path):
     with open(output_path, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -83,14 +83,14 @@ def get_single_origin_output_dict(args, text, model, base_model, tokenizer, devi
     output_dict["original z score"] = original_result['z-score']
     # output_dict["original prediction"] = original_result['Prediction']
 
-    baseline_result, _ = detect(baseline_completion, args, device=device, tokenizer=tokenizer)
+    baseline_result, _ = detect(output_without_watermark, args, device=device, tokenizer=tokenizer)
     baseline_result = dict(baseline_result)
-    output_dict["baseline completion"] = baseline_completion
+    output_dict["baseline completion"] = output_without_watermark
     output_dict["baseline green fraction"] = baseline_result['Fraction of T in Greenlist']
     output_dict["baseline z score"] = baseline_result['z-score']
     # output_dict["baseline prediction"] = baseline_result['Prediction']
 
-    print("baseline completion: " + baseline_completion)
+    print("baseline completion: " + output_without_watermark)
     print("original completion: " + output_with_watermark)
     return output_with_watermark, output_dict
 

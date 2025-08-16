@@ -61,8 +61,9 @@ def train(model, tokenized_dataset, tokenizer):
     print("Start finetuning...")
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
-        per_device_train_batch_size=4,  # 显存吃紧时：2 或 1
-        gradient_accumulation_steps=8,  # 有效 batch = 4*8=32
+        per_device_train_batch_size=4,
+        # 指跑完8个batch后做一次参数更新，前8次得到的梯度累积起来，模拟大batch的更新效果，有效 batch = 4*8=32
+        gradient_accumulation_steps=8,
         num_train_epochs=3,
         learning_rate=5e-3,
         weight_decay=0.01,  # 权重衰减，在损失函数里额外加上一项，惩罚权重参数过大=>防止模型过拟合
