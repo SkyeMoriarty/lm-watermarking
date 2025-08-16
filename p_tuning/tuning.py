@@ -2,7 +2,7 @@ from datasets import load_dataset, Dataset
 
 from demo_watermark import load_model
 from peft import get_peft_model, PromptEncoderConfig, TaskType
-from transformers import Trainer, TrainingArguments, default_data_collator
+from transformers import Trainer, TrainingArguments, default_data_collator, IntervalStrategy, SchedulerType
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -65,18 +65,18 @@ def train(model, tokenized_dataset, tokenizer):
 
         # ---- P-tuning 常用较高 LR；小数据加 warmup 与 weight decay 抑制过拟合 ----
         learning_rate=8e-4,  # 可在 [5e-4, 2e-3] 网格微调
-        lr_scheduler_type="cosine",
+        lr_scheduler_type=SchedulerType.COSINE,
         warmup_ratio=0.1,
         weight_decay=0.01,
         max_grad_norm=1.0,
 
         # ---- 记录/保存：步数级评估，密集记录，避免“空图” ----
-        # logging_strategy="steps",
+        logging_strategy=IntervalStrategy.STEPS,
         logging_steps=5,  # 100 步/epoch → 每轮约 20 个点
         logging_first_step=True,
-        # evaluation_strategy="steps",
+        evaluation_strategy=IntervalStrategy.STEPS,
         eval_steps=20,  # 100 步/epoch → 每轮评估 5 次
-        # save_strategy="steps",
+        save_strategy=IntervalStrategy.STEPS,
         save_steps=20,
         save_total_limit=2,
         load_best_model_at_end=True,  # 需要提供 eval_dataset 才有效
