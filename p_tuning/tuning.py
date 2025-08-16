@@ -60,17 +60,32 @@ def train(model, tokenized_dataset, tokenizer):
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
         per_device_train_batch_size=4,
-        gradient_accumulation_steps=8,
-        num_train_epochs=4,
-        learning_rate=1e-3,
-        weight_decay=0.01,
+        gradient_accumulation_steps=4,  # 有效 batch = 16 → 每个 epoch ≈ 1600/16 = 100 步
+        num_train_epochs=5,  # 小数据多跑几轮更稳（3~6 之间可调）
+
+        # ---- P-tuning 常用较高 LR；小数据加 warmup 与 weight decay 抑制过拟合 ----
+        learning_rate=8e-4,  # 可在 [5e-4, 2e-3] 网格微调
+        lr_scheduler_type="cosine",
         warmup_ratio=0.1,
-        save_total_limit=1,
-        logging_steps=100,  # 每隔多少step记录一次
-        save_steps=500,
-        logging_dir="./logs",
+        weight_decay=0.01,
+        max_grad_norm=1.0,
+
+        # ---- 记录/保存：步数级评估，密集记录，避免“空图” ----
+        logging_strategy="steps",
+        logging_steps=5,  # 100 步/epoch → 每轮约 20 个点
+        logging_first_step=True,
+        evaluation_strategy="steps",
+        eval_steps=20,  # 100 步/epoch → 每轮评估 5 次
+        save_strategy="steps",
+        save_steps=20,
+        save_total_limit=2,
+        load_best_model_at_end=True,  # 需要提供 eval_dataset 才有效
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+
         fp16=True,
-        label_names=["labels"]
+        seed=42,
+        report_to=[],  # 不上报外部 logger
     )
 
     trainer = Trainer(
