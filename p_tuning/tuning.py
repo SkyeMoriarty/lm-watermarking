@@ -74,7 +74,7 @@ def train(model, tokenized_dataset, tokenizer):
         logging_strategy=IntervalStrategy.STEPS,
         logging_steps=5,  # 100 步/epoch → 每轮约 20 个点
         logging_first_step=True,
-        evaluation_strategy=IntervalStrategy.STEPS,
+        # evaluation_strategy=IntervalStrategy.STEPS,
         eval_steps=20,  # 100 步/epoch → 每轮评估 5 次
         save_strategy=IntervalStrategy.STEPS,
         save_steps=20,
