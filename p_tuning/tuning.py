@@ -60,10 +60,13 @@ def train(model, tokenized_dataset, tokenizer):
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
         per_device_train_batch_size=4,
-        num_train_epochs=2,
-        learning_rate=5e-5,
+        gradient_accumulation_steps=8,
+        num_train_epochs=4,
+        learning_rate=1e-3,
+        weight_decay=0.01,
+        warmup_ratio=0.1,
         save_total_limit=1,
-        logging_steps=10,  # 每隔多少step记录一次
+        logging_steps=100,  # 每隔多少step记录一次
         save_steps=500,
         logging_dir="./logs",
         fp16=True,
@@ -84,10 +87,11 @@ def train(model, tokenized_dataset, tokenizer):
     logs = trainer.state.log_history
     df = pd.DataFrame(logs)
     loss_df = df[df["loss"].notna()].sort_values("step")
+    loss_df["smoothed_loss"] = loss_df["loss"].rolling(20).mean()
 
     # 画图
     plt.figure(figsize=(6, 4))
-    plt.plot(loss_df["step"], loss_df["loss"])
+    plt.plot(loss_df["step"], loss_df["smoothed_loss"])
     plt.xlabel("Global step")
     plt.ylabel("Training loss")
     plt.title("Training loss over steps")
