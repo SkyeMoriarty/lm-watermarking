@@ -61,41 +61,29 @@ def train(model, tokenized_dataset, tokenizer):
     print("Start finetuning...")
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
-        per_device_train_batch_size=4,  # 一个batch是一次送进模型的数据量
-        gradient_accumulation_steps=4,  # 模型完成一次参数更新，有效 batch = 16 → 每个 epoch ≈ 1600/16 = 100 步
-        num_train_epochs=5,  # 把数据集完整训练一次的轮数，小数据多跑几轮更稳
+        per_device_train_batch_size=4,  # 显存吃紧时：2 或 1
+        gradient_accumulation_steps=8,  # 有效 batch = 4*8=32
+        num_train_epochs=3,
+        learning_rate=5e-3,
+        weight_decay=0.01,  # 权重衰减，在损失函数里额外加上一项，惩罚权重参数过大=>防止模型过拟合
 
-        # ---- P-tuning 常用较高 LR；小数据加 warmup 与 weight decay 抑制过拟合 ----
-        learning_rate=8e-4,  # 可在 [5e-4, 2e-3] 网格微调
-        lr_scheduler_type=SchedulerType.COSINE,
-        warmup_ratio=0.1,
-        weight_decay=0.01,
-        max_grad_norm=1.0,
-
-        # ---- 记录/保存：步数级评估，密集记录，避免“空图” ----
-        logging_strategy=IntervalStrategy.STEPS,
-        logging_steps=5,  # 100 步/epoch → 每轮约 20 个点
+        logging_steps=5,  # 每 5 步（每更新5次参数）打印一次 loss
         logging_first_step=True,
-        evaluation_strategy=IntervalStrategy.STEPS,
-        eval_steps=20,  # 100 步/epoch → 每轮评估 5 次
-        save_strategy=IntervalStrategy.STEPS,
-        save_steps=20,
-        save_total_limit=2,
-        load_best_model_at_end=True,  # 需要提供 eval_dataset 才有效
-        metric_for_best_model="eval_loss",
-        greater_is_better=False,
+        logging_dir="./logs",
+        logging_strategy=IntervalStrategy.STEPS,  # 明确按 step 记录
+
+        save_steps=50,  # 每 50 步保存一次checkpoint
+        save_total_limit=2,  # 只保留最近 2 个 checkpoint，省磁盘
 
         fp16=True,
-        seed=42,
-        report_to=[],  # 不上报外部 logger
+        warmup_ratio=0.1,  # 前10%步逐步提高学习率，防止初期不稳定
+        max_grad_norm=1.0,  # 梯度裁剪，防止梯度爆炸
     )
 
-    train_data, eval_data = train_test_split(tokenized_dataset, test_size=0.1, random_state=42)
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=train_data,
-        eval_dataset=eval_data,
+        train_dataset=tokenized_dataset,
         tokenizer=tokenizer,
         data_collator=default_data_collator,
     )
