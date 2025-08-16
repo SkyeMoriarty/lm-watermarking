@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def load_training_data(path='./p_tuning_data.cleaned.jsonl'):
+def load_training_data(path='p_tuning/p_tuning_data.cleaned.jsonl'):
     dataset = load_dataset("json", data_files=path)
     return dataset
 
