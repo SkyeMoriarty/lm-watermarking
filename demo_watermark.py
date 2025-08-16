@@ -314,28 +314,28 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
         args.prompt_max_length = 2048 - args.max_new_tokens
 
     # Tokenize without truncation
-    tokens = tokenizer(prompt, return_tensors=None, add_special_tokens=True)["input_ids"]
-
-    # 判断是否需要截断
-    if len(tokens) > args.prompt_max_length:
-        truncated_tokens = tokens[:args.prompt_max_length]
-        completion_tokens = tokens[args.prompt_max_length: args.prompt_max_length + 200]
-
-        truncated_prompt = tokenizer.decode(truncated_tokens, skip_special_tokens=True)
-        baseline_completion = tokenizer.decode(completion_tokens, skip_special_tokens=True)
-        truncation_warning = True
-    else:
-        truncated_prompt = prompt
-        baseline_completion = ""
-        truncation_warning = False
+    # tokens = tokenizer(prompt, return_tensors=None, add_special_tokens=True)["input_ids"]
+    #
+    # # 判断是否需要截断
+    # if len(tokens) > args.prompt_max_length:
+    #     truncated_tokens = tokens[:args.prompt_max_length]
+    #     completion_tokens = tokens[args.prompt_max_length: args.prompt_max_length + 200]
+    #
+    #     truncated_prompt = tokenizer.decode(truncated_tokens, skip_special_tokens=True)
+    #     baseline_completion = tokenizer.decode(completion_tokens, skip_special_tokens=True)
+    #     truncation_warning = True
+    # else:
+    #     truncated_prompt = prompt
+    #     baseline_completion = ""
+    #     truncation_warning = False
 
     # 再次转成 tensor 用于后续模型使用
-    tokd_input = tokenizer([truncated_prompt], return_tensors="pt", padding=True, truncation=True,
-                           max_length=args.prompt_max_length, add_special_tokens=False).to(device)
-    #
-    # tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True,
-    #                        max_length=args.prompt_max_length).to(device)
-    # truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
+    # tokd_input = tokenizer([truncated_prompt], return_tensors="pt", padding=True, truncation=True,
+    #                        max_length=args.prompt_max_length, add_special_tokens=False).to(device)
+
+    tokd_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True, truncation=True,
+                           max_length=args.prompt_max_length).to(device)
+    truncation_warning = True if tokd_input["input_ids"].shape[-1] == args.prompt_max_length else False
     redecoded_input = tokenizer.batch_decode(tokd_input["input_ids"], skip_special_tokens=True)[0]
 
     torch.manual_seed(args.generation_seed)
@@ -358,7 +358,7 @@ def generate(prompt, args, model=None, device=None, tokenizer=None, base_model=N
     # 生成结果是单样本，所以取第一个元素
     decoded_output_without_watermark = tokenizer.batch_decode(output_without_watermark, skip_special_tokens=True)[0]
     decoded_output_with_watermark = tokenizer.batch_decode(output_with_watermark, skip_special_tokens=True)[0]
-
+    baseline_completion = ""
     return (redecoded_input,
             int(truncation_warning),
             decoded_output_without_watermark,
