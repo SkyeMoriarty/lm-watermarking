@@ -49,7 +49,7 @@ def load_configured_model(args):
         peft_config = PromptEncoderConfig(
             task_type=TaskType.CAUSAL_LM,
             inference_mode=False,
-            num_virtual_tokens=16,  # 对比{8, 16, 32}
+            num_virtual_tokens=8,  # 对比{8, 16, 32}
             encoder_hidden_size=model.config.hidden_size,
         )
 
@@ -65,15 +65,23 @@ def train(model, tokenized_dataset, tokenizer):
         # 指跑完8个batch后做一次参数更新，前8次得到的梯度累积起来，模拟大batch的更新效果，有效 batch = 4*8=32
         gradient_accumulation_steps=8,
         num_train_epochs=3,
-        learning_rate=5e-3,
+        learning_rate=1e-3,
         weight_decay=0.01,  # 权重衰减，在损失函数里额外加上一项，惩罚权重参数过大=>防止模型过拟合
+
+        eval_steps=47,  # 每 ~0.5 个 epoch 评估一次
+        evaluation_strategy=IntervalStrategy.STEPS,
+        save_strategy=IntervalStrategy.STEPS,
+
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
 
         logging_steps=5,  # 每 5 步（每更新5次参数）打印一次 loss
         logging_first_step=True,
         logging_dir="./logs",
         logging_strategy=IntervalStrategy.STEPS,  # 明确按 step 记录
 
-        save_steps=50,  # 每 50 步保存一次checkpoint
+        save_steps=94,  # 每 94 步保存一次checkpoint
         save_total_limit=2,  # 只保留最近 2 个 checkpoint，省磁盘
 
         fp16=True,
@@ -81,10 +89,12 @@ def train(model, tokenized_dataset, tokenizer):
         max_grad_norm=1.0,  # 梯度裁剪，防止梯度爆炸
     )
 
+    train_dataset, eval_dateset = train_test_split(tokenized_dataset, 0.1)
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_dataset,
+        train_dataset=train_dataset,
+        eval_dateset=eval_dateset,
         tokenizer=tokenizer,
         data_collator=default_data_collator,
     )
@@ -93,20 +103,27 @@ def train(model, tokenized_dataset, tokenizer):
     print("Finished!")
 
     logs = trainer.state.log_history
-    df = pd.DataFrame(logs)
-    loss_df = df[df["loss"].notna()].sort_values("step")
-    loss_df["smoothed_loss"] = loss_df["loss"].rolling(20).mean()
+    train_pts, eval_pts = [], []
 
-    # 画图
-    plt.figure(figsize=(6, 4))
-    plt.plot(loss_df["step"], loss_df["smoothed_loss"])
-    plt.xlabel("Global step")
-    plt.ylabel("Training loss")
-    plt.title("Training loss over steps")
-    plt.grid(True, alpha=0.3)
+    for rec in logs:
+        if "loss" in rec and "learning_rate" in rec:  # 这是训练步骤日志
+            train_pts.append((rec.get("step", None), rec["loss"]))
+        if "eval_loss" in rec:  # 这是评估日志
+            eval_pts.append((rec.get("step", None), rec["eval_loss"]))
+
+    # 分别取 x,y
+    tx, ty = zip(*train_pts) if train_pts else ([], [])
+    ex, ey = zip(*eval_pts) if eval_pts else ([], [])
+
+    plt.figure(figsize=(7, 4.5))
+    plt.plot(tx, ty, label="Train loss")
+    plt.plot(ex, ey, label="Eval loss")
+    plt.xlabel("Steps")
+    plt.ylabel("Loss")
+    plt.title("P-tuning on OPT: Train vs Eval Loss")
+    plt.legend()
     plt.tight_layout()
-    plt.savefig("training_loss_curve.png", dpi=200)
-    plt.close()
+    plt.show()
 
 
 def get_ptuned_opt(args):
