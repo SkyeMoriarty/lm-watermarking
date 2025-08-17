@@ -11,12 +11,12 @@ import math
 epsilons = [0, 0.1, 0.3, 0.5]
 types = ['original', 'replaced', 'inserted', 'deleted']
 
-# model_name = "facebook/opt-2.7b"
-# tokenizer = AutoTokenizer.from_pretrained(model_name)
-# model = AutoModelForCausalLM.from_pretrained(model_name)
-# model.eval()  # 推理模式
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model.to(device)
+model_name = "facebook/opt-2.7b"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+model.eval()  # 推理模式
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 
 def filter_epsilon(df, epsilon):
@@ -221,14 +221,14 @@ if __name__ == '__main__':
     # get_metrics_comparison(locs, z_thresholds, des)
 
     df = pd.read_csv(locs[3], encoding='utf-8')
-    dir = locs[3].split('/')[0]
-    get_ROC(df, dir)
+    # dir = locs[3].split('/')[0]
+    # get_ROC(df, dir)
     #
-    # for type in types:
-    #     texts = df[type + ' watermarked completion']
-    #     df[type + ' ppl'] = calculate_ppls(texts)
-    #
-    # df.to_csv('g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv')
+    for type in types:
+        texts = df[type + ' watermarked completion']
+        df[type + ' ppl'] = calculate_ppls(texts)
+
+    df.to_csv('p tuned ROC/p_tuned_attack_result(with ppl).csv')
 
     # for loc in locs:
     #     dir = loc.split("/")[0]
