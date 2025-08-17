@@ -88,7 +88,7 @@ def train(model, tokenized_dataset, tokenizer):
         logging_dir="./logs",
         logging_strategy=IntervalStrategy.STEPS,  # 明确按 step 记录
 
-        save_steps=94,  # 一般希望每隔epoch存一次，每 94 步保存一次checkpoint
+        save_steps=50,
         save_total_limit=2,  # 只保留最近 2 个 checkpoint，省磁盘
 
         fp16=True,
