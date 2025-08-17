@@ -69,7 +69,7 @@ def train(model, tokenized_dataset, tokenizer):
         weight_decay=0.01,  # 权重衰减，在损失函数里额外加上一项，惩罚权重参数过大=>防止模型过拟合
 
         eval_steps=47,  # 每 ~0.5 个 epoch 评估一次
-        # evaluation_strategy=IntervalStrategy.STEPS,
+        eval_strategy=IntervalStrategy.STEPS,
         save_strategy=IntervalStrategy.STEPS,
 
         load_best_model_at_end=True,
