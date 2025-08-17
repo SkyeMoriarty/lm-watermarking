@@ -57,18 +57,25 @@ def load_configured_model(args):
     return tokenizer, model
 
 
+def smooth(y, k=5):
+    import numpy as np
+    if len(y) < k:
+        return y
+    return np.convolve(y, np.ones(k)/k, mode="valid")
+
+
 def train(model, tokenized_dataset, tokenizer):
     print("Start finetuning...")
     training_args = TrainingArguments(
         output_dir="./ptuned_opt",
-        per_device_train_batch_size=4,
-        # 指跑完8个batch后做一次参数更新，前8次得到的梯度累积起来，模拟大batch的更新效果，有效 batch = 4*8=32
-        gradient_accumulation_steps=8,
-        num_train_epochs=3,
+        per_device_train_batch_size=4,  # batch：一次送进模型的样本，这里一个batch中有4个sample
+        # 指跑完8个batch后做一次参数更新，前8次得到的梯度累积起来，模拟大batch的更新效果，有效 batch = 4*8=32个sample
+        gradient_accumulation_steps=8,   # step：一次参数更新，gradient_accumulation_steps指累计多少batch更新一次参数
+        num_train_epochs=3,  # 已知32个sample更新一次参数，一个epoch内更新3000/30=100次参数，即一个epoch有100个step
         learning_rate=1e-3,
         weight_decay=0.01,  # 权重衰减，在损失函数里额外加上一项，惩罚权重参数过大=>防止模型过拟合
 
-        eval_steps=47,  # 每 ~0.5 个 epoch 评估一次
+        eval_steps=25,  # 一般希望每个epoch进行1-5次验证
         eval_strategy=IntervalStrategy.STEPS,
         save_strategy=IntervalStrategy.STEPS,
 
@@ -76,12 +83,12 @@ def train(model, tokenized_dataset, tokenizer):
         metric_for_best_model="eval_loss",
         greater_is_better=False,
 
-        logging_steps=5,  # 每 5 步（每更新5次参数）打印一次 loss
+        logging_steps=10,  # 一般希望每个epoch打印5-20次日志，每10步打印一次 loss，共打印10次
         logging_first_step=True,
         logging_dir="./logs",
         logging_strategy=IntervalStrategy.STEPS,  # 明确按 step 记录
 
-        save_steps=94,  # 每 94 步保存一次checkpoint
+        save_steps=94,  # 一般希望每隔epoch存一次，每 94 步保存一次checkpoint
         save_total_limit=2,  # 只保留最近 2 个 checkpoint，省磁盘
 
         fp16=True,
@@ -109,18 +116,23 @@ def train(model, tokenized_dataset, tokenizer):
     train_pts, eval_pts = [], []
 
     for rec in logs:
-        if "loss" in rec and "learning_rate" in rec:  # 这是训练步骤日志
+        if "loss" in rec and "learning_rate" in rec:  # 训练步骤日志
             train_pts.append((rec.get("step", None), rec["loss"]))
-        if "eval_loss" in rec:  # 这是评估日志
+        if "eval_loss" in rec:  # 评估日志
             eval_pts.append((rec.get("step", None), rec["eval_loss"]))
 
     # 分别取 x,y
     tx, ty = zip(*train_pts) if train_pts else ([], [])
     ex, ey = zip(*eval_pts) if eval_pts else ([], [])
 
+    k = 7
+    ty_smooth = smooth(list(ty), k)
+    tx_smooth = list(tx)[:len(ty_smooth)]  # 对齐长度
+
     plt.figure(figsize=(7, 4.5))
-    plt.plot(tx, ty, label="Train loss")
-    plt.plot(ex, ey, label="Eval loss")
+    plt.plot(tx, ty, label="Train loss (raw)", alpha=0.3)
+    plt.plot(tx_smooth, ty_smooth, label=f"Train loss (smoothed, k={k})", linewidth=2)
+    plt.plot(ex, ey, label="Eval loss", linewidth=2)
     plt.xlabel("Steps")
     plt.ylabel("Loss")
     plt.title("P-tuning on OPT: Train vs Eval Loss")
