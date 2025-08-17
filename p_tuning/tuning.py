@@ -126,6 +126,7 @@ def train(model, tokenized_dataset, tokenizer):
     plt.title("P-tuning on OPT: Train vs Eval Loss")
     plt.legend()
     plt.tight_layout()
+    plt.savefig("./P-tuning on OPT: Train vs Eval Loss.png")
     plt.show()
 
 
