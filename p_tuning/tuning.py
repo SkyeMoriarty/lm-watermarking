@@ -89,7 +89,7 @@ def train(model, tokenized_dataset, tokenizer):
         max_grad_norm=1.0,  # 梯度裁剪，防止梯度爆炸
     )
 
-    train_dataset, eval_dateset = train_test_split(tokenized_dataset, 0.1)
+    train_dataset, eval_dateset = train_test_split(tokenized_dataset, test_size=0.1, random_state=42, shuffle=True)
     trainer = Trainer(
         model=model,
         args=training_args,
