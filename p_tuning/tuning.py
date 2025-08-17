@@ -97,7 +97,7 @@ def train(model, tokenized_dataset, tokenizer):
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dateset=eval_dataset,
+        eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         data_collator=default_data_collator,
     )
