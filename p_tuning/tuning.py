@@ -89,12 +89,15 @@ def train(model, tokenized_dataset, tokenizer):
         max_grad_norm=1.0,  # 梯度裁剪，防止梯度爆炸
     )
 
-    train_dataset, eval_dateset = train_test_split(tokenized_dataset, test_size=0.1, random_state=42, shuffle=True)
+    split_dataset = tokenized_dataset.train_test_split(test_size=0.1, seed=42)
+    train_dataset = split_dataset["train"]
+    eval_dataset = split_dataset["test"]
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dateset=eval_dateset,
+        eval_dateset=eval_dataset,
         tokenizer=tokenizer,
         data_collator=default_data_collator,
     )
