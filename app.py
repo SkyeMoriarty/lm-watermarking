@@ -53,9 +53,9 @@ arg_dict = {
 
 args.__dict__.update(arg_dict)
 
-# from p_tuning.tuning import get_ptuned_opt
-#
-# get_ptuned_opt(args)
+from p_tuning.tuning import get_ptuned_opt
+
+get_ptuned_opt(args)
 
 # from demo_watermark import main
 #
@@ -64,7 +64,7 @@ args.__dict__.update(arg_dict)
 # from p_tuning.training_data import get_train_data
 #
 # get_train_data(args)
-#
-from attack_experiment.under_attack import get_output_dicts
-
-get_output_dicts(args)
+# #
+# from attack_experiment.under_attack import get_output_dicts
+# 
+# get_output_dicts(args)
