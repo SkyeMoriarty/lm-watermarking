@@ -211,12 +211,12 @@ prf_lookup = {
 rng = torch.Generator(device=torch.device("cpu"))
 rng.manual_seed(2971215073)  # fib47 is prime
 table_size = 1_000_003
-fixed_table = torch.randperm(1_000_003, device=torch.device("cpu"), generator=rng)  # actually faster than I thought
+fixed_table = torch.randperm(table_size, device=torch.device("cpu"), generator=rng)  # actually faster than I thought
 
 
 def hashint(integer_tensor: torch.LongTensor) -> torch.LongTensor:
     """Sane version, in the end we only need a small permutation table."""
-    return fixed_table[integer_tensor.cpu() % table_size] + 1  # minor cheat here, this function always return CPU
+    return fixed_table[integer_tensor.cpu() % table_size] + 1
     # values
 
 

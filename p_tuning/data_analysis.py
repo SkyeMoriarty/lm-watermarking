@@ -68,7 +68,7 @@ def special_char_stats(texts):
     total_chars = len(joined_text)
     counts = {name: len(re.findall(pattern, joined_text))
               for name, pattern in patterns.items()}
-    percents = {name: f"{count / total_chars * 100:.3f}" for name, count in counts.items()}
+    percents = {name: f"{count / total_chars:.6f}" for name, count in counts.items()}
     return percents
 
 
@@ -76,4 +76,5 @@ if __name__ == '__main__':
     df = pd.read_json('./p_tuning_data.jsonl', lines=True)
     percents = special_char_stats(df["target"].tolist())
     print(percents)
-
+    # get_length_distribution(df)
+    # draw_repeat_ratio(df)

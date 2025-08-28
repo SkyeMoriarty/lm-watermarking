@@ -1,0 +1,10 @@
+attack_type,epsilon,baseline,improved
+replaced,0.1,2.02%,3.06%
+replaced,0.3,2.02%,5.10%
+replaced,0.5,5.05%,3.06%
+inserted,0.1,2.02%,2.04%
+inserted,0.3,1.01%,1.02%
+inserted,0.5,2.02%,2.04%
+deleted,0.1,71.72%,71.43%
+deleted,0.3,42.42%,52.04%
+deleted,0.5,42.42%,53.06%

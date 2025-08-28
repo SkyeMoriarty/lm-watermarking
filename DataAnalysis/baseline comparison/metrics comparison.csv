@@ -1,0 +1,3 @@
+seeding type,z-score mean,z-score std,green fraction mean,TPR@3,FNR@3,TPR@4,FNR@4,TPR@5,FNR@5
+simple,9.98,2.25,0.57,0.980,0.020,0.980,0.020,0.960,0.040
+p_tuned,9.46,2.14,0.55,0.990,0.010,0.980,0.020,0.939,0.061

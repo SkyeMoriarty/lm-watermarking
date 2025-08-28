@@ -38,24 +38,24 @@ if __name__ == '__main__':
     # df = pd.read_csv(loc_hs, encoding='utf-8')
     # results_hs = compute_asr(df, 4)
 
-    loc_gpa = 'g+p+a ROC/g+p+a_attack_result(with ppl).csv'
-    df_gpa = pd.read_csv(loc_gpa, encoding='utf-8')
-    results_gpa = compute_asr(df_gpa, 4)
+    loc_baseline = 'g+p+a ROC/g+p+a_attack_result(with ppl).csv'
+    df_baseline = pd.read_csv(loc_baseline, encoding='utf-8')
+    results_baseline = compute_asr(df_baseline, 4)
 
-    loc_gpa = 'g+p+a ROC(min)/g+p+a_attack_result(min, with ppl).csv'
-    df_gpa = pd.read_csv(loc_gpa, encoding='utf-8')
-    results_gpa_min = compute_asr(df_gpa, 4)
+    loc_improved = 'p_tuned ROC/p_tuned_attack_result(with ppl).csv'
+    df_improved = pd.read_csv(loc_improved, encoding='utf-8')
+    results_improved = compute_asr(df_improved, 4)
 
     rows = []
     for type in types:
-        for epsilon in results_gpa[type]:
+        for epsilon in results_baseline[type]:
             row = {
                 "attack_type": type,
                 "epsilon": epsilon,
-                "sum": f"{results_gpa[type][epsilon]['asr']:.2%}",
-                "min": f"{results_gpa_min[type][epsilon]['asr']:.2%}",
+                "baseline": f"{results_baseline[type][epsilon]['asr']:.2%}",
+                "improved": f"{results_improved[type][epsilon]['asr']:.2%}",
             }
             rows.append(row)
 
     df = pd.DataFrame(rows)
-    df.to_csv("aggregation comparison/asr_comparison.csv", index=False)
+    df.to_csv("effect of p-tuning/asr_comparison.csv", index=False)

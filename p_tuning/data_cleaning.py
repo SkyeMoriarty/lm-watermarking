@@ -76,7 +76,14 @@ def has_repetitive_pattern(text, n=3, threshold=0.2):
 
 def clean(input_path=INPUT_JSONL, output_path=OUTPUT_JSONL):
     raw = load_jsonl(input_path)
-    print("initial length: ", len(raw))
+    for it in raw:
+        it["input"] = it.get("input", "")
+        it["target"] = it.get("target", "")
+    df_temp = pd.DataFrame(raw)
+    df_temp["repeat_ratio0"] = df_temp["target"].apply(lambda x: get_repeat_ratio(x))
+    print("length initial: ", len(df_temp))
+    print("avg completion length initial: ", np.mean(df_temp["target"].apply(lambda x: len(x.split()))))
+    print("ratio initial: ", df_temp["repeat_ratio0"].mean())
     print()
 
     # normalize
@@ -85,37 +92,38 @@ def clean(input_path=INPUT_JSONL, output_path=OUTPUT_JSONL):
         it["target"] = normalize(it.get("target", ""))
     df = pd.DataFrame(raw)
 
-    # df["repeat_ratio1"] = df["target"].apply(lambda x: get_repeat_ratio(x))
-    # print("length after normalization: ", len(df))
-    # print("avg completion length after normalization: ", np.mean(df["target"].apply(lambda x: len(x.split()))))
-    # print("ratio after normalization: ", df["repeat_ratio1"].mean())
-    # print()
+    df["repeat_ratio1"] = df["target"].apply(lambda x: get_repeat_ratio(x))
+    print("length after normalization: ", len(df))
+    print("avg completion length after normalization: ", np.mean(df["target"].apply(lambda x: len(x.split()))))
+    print("ratio after normalization: ", df["repeat_ratio1"].mean())
+    print()
 
     # remove duplicates
     df = df.drop_duplicates(subset=["target"])
-    # df["repeat_ratio2"] = df["target"].apply(lambda x: get_repeat_ratio(x))
-    # print("length after deduplication: ", len(df))
-    # print("avg completion length after deduplication: ", df["target"].apply(lambda x: len(x.split())).mean())
-    # print("ratio after deduplication: ", df["repeat_ratio2"].mean())
-    # print()
+    df["repeat_ratio2"] = df["target"].apply(lambda x: get_repeat_ratio(x))
+    print("length after deduplication: ", len(df))
+    print("avg completion length after deduplication: ", df["target"].apply(lambda x: len(x.split())).mean())
+    print("ratio after deduplication: ", df["repeat_ratio2"].mean())
+    print()
 
     # filter short targets
     df = df[df["target"].apply(lambda x: len(x.split()) > 10)]
-    # df["repeat_ratio3"] = df["target"].apply(lambda x: get_repeat_ratio(x))
-    # print("length after len filtering: ", len(df))
-    # print("avg completion length after len filtering: ", df["target"].apply(lambda x: len(x.split())).mean())
-    # print("ratio after len filtering: ", df["repeat_ratio3"].mean())
-    # print()
+    df = df[df["input"].apply(lambda x: len(x.split()) > 20)]
+    df["repeat_ratio3"] = df["target"].apply(lambda x: get_repeat_ratio(x))
+    print("length after len filtering: ", len(df))
+    print("avg completion length after len filtering: ", df["target"].apply(lambda x: len(x.split())).mean())
+    print("ratio after len filtering: ", df["repeat_ratio3"].mean())
+    print()
 
     # filter circular generations
     df = df[df["target"].apply(lambda x: not has_repetitive_pattern(x))]
-    # df["repeat_ratio4"] = df["target"].apply(lambda x: get_repeat_ratio(x))
-    # print("cleaned length: ", len(df))
-    # print("avg completion length after clean: ", df["target"].apply(lambda x: len(x.split())).mean())
-    # print("initial after clean: ", df["repeat_ratio4"].mean())
-    # print()
+    df["repeat_ratio4"] = df["target"].apply(lambda x: get_repeat_ratio(x))
+    print("cleaned length: ", len(df))
+    print("avg completion length after clean: ", df["target"].apply(lambda x: len(x.split())).mean())
+    print("initial after clean: ", df["repeat_ratio4"].mean())
+    print()
 
-    df.to_json(output_path, orient="records", lines=True, force_ascii=False)
+    # df.to_json(output_path, orient="records", lines=True, force_ascii=False)
 
 
 if __name__ == "__main__":
