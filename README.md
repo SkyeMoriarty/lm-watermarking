@@ -1,6 +1,6 @@
 # 💧 [A Watermark for Large Language Models](https://arxiv.org/abs/2301.10226) 🔍
 
-### [Demo](https://huggingface.co/spaces/tomg-group-umd/lm-watermarking) | [Paper](https://arxiv.org/abs/2301.10226)
+### Baseline paper
 
 Official implementation of the watermarking and detection algorithms presented in the papers:
 
@@ -8,15 +8,16 @@ Official implementation of the watermarking and detection algorithms presented i
 
 "On the Reliability of Watermarks for Large Language Models" by _John Kirchenbauer*, Jonas Geiping*, Yuxin Wen, Manli Shu, Khalid Saifullah, Kezhi Kong, Kasun Fernando, Aniruddha Saha, Micah Goldblum, Tom Goldstein_
 
-### Updates:
+### Improvement by Skye
 
-- **(6/7/23)** We're thrilled to announce the release of ["On the Reliability of Watermarks for Large Language Models"](https://arxiv.org/abs/2306.04634) Our new preprint documents a deep dive into the robustness properties of more advanced watermarks.
+- Realize a hybrid seeding scheme that incorporates global, position, and anchor information into green list generation
 
-- **(6/9/23)** Initial code release implementing the alternate watermark and detector variants in the new work. Files located in this subdirectory: [`watermark_reliability_release`](watermark_reliability_release).
+- Implement P-tuning for embedding watermark at the representation level
 
-- **(9/23/23)** Update to the docs with recommendations on parameter settings. Extended implementation (recommended) available in `extended_watermark_processor.py`.
+- Build an attack interface and three attack implementations: replacement, insertion, and deletion
 
-- **(1/16/24)** ["On the Reliability of Watermarks for Large Language Models"](https://arxiv.org/abs/2306.04634) has been accepted for publication and will be presented at ICLR 2024 in Vienna, Austria!
+- Conduct experiments on detectability and robustness for both baseline comparison and ablation study
+
 
 ---
 
